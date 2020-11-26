@@ -1,0 +1,39 @@
+network:
+    ethernets:
+        ens10:
+            match:
+                macaddress: 52:54:00:b5:ae:78
+            set-name: ens10
+            addresses:
+                - 10.10.10.2/24
+        ens20:
+            match:
+                macaddress: 52:54:00:17:29:b0
+            set-name: ens20
+            addresses:
+                - 10.10.20.2/24
+        ens30:
+            match:
+                macaddress: 52:54:00:a1:b5:a1
+            set-name: ens30
+            addresses:
+                - 10.10.30.2/24
+        ens40:
+            match:
+                macaddress: 52:54:00:2a:8f:09
+            set-name: ens40
+            addresses:
+                - 10.10.40.2/24
+        ens50:
+            match:
+                macaddress: 52:54:00:bc:bd:7f
+            set-name: ens50
+            addresses:
+                - 10.10.50.2/24
+        ens60:
+            match:
+                macaddress: 52:54:00:8a:c5:3f
+            set-name: ens60
+            addresses:
+                - 10.10.60.2/24
+    version: 2

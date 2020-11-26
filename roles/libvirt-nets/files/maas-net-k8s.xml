@@ -1,0 +1,6 @@
+<network>
+  <name>maas-k8s</name>
+  <forward mode='bridge'/>
+  <bridge name='maas-k8s'/>
+  <port isolated='yes'/>
+</network>

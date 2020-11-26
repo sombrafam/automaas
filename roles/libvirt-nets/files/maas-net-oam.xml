@@ -1,0 +1,6 @@
+<network>
+  <name>maas-oam</name>
+  <forward mode='bridge'/>
+  <bridge name='maas-oam'/>
+  <port isolated='yes'/>
+</network>
