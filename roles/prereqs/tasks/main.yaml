@@ -12,6 +12,7 @@
     delay: 1
     timeout: 10
 
+# TODO: Pin package versions
 - name: "Install the packages"
   become: true
   apt:
@@ -33,3 +34,25 @@
   service:
     name: libvirt-bin
     state: started
+
+- name: "Enable password authentication"
+  become: true
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    state: present
+    regexp: '^PasswordAuthentication'
+    line: 'PasswordAuthentication yes'
+
+- name: "Set password for user ubuntu"
+  become: true
+  lineinfile:
+    path: /etc/shadow
+    state: present
+    regexp: '^ubuntu'
+    line: 'ubuntu:$6$uHJKDSG68qu4WnSQ$Jz13SwqtOPSRaLanTqYAlMdTpORMrzYl.tnGgGNSNBVmXDsv7/t2ibC3j2kC6/GGDMUKvBcbcX.ks2it1alKR0:18592:0:99999:7:::'
+
+- name: "Restart ssh service"
+  become: true
+  service:
+    name: ssh
+    state: restarted

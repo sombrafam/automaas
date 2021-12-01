@@ -27,3 +27,10 @@
       sudo virsh net-autostart maas-${br}
       id=$((id+10))
     done
+
+- name: "Forward MAAS ports"
+  shell: |
+    #!/bin/bash
+    sudo iptables -I PREROUTING -t nat -p tcp -d {{ ansible_ssh_host }} --dport 5240 -j DNAT --to-destination 10.10.10.2:5240
+    sudo iptables -I PREROUTING -t nat -p tcp -d {{ ansible_ssh_host }} --dport 2222 -j DNAT --to-destination 10.10.10.2:22
+

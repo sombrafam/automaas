@@ -25,24 +25,19 @@
     remote_src: yes
     creates: /home/ubuntu/VMStorage/Disks/vmdisk-automaas-server.qcow2
 
-- name: Disable password authentication for root
-  become: true
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    state: present
-    regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication yes'
-
-#- name: Restart ssh service
-#  service:
-#    name: ssh
-#    state: restarted
-
 - name: "Create libvirt domain"
   shell: |
     #!/bin/bash -xe
+    # TODO: Undefine if exists, so you can run the script
+    # multiple times if something fails in the way.
     sudo virsh define /home/ubuntu/VMStorage/Disks/automaas-server.xml
     sudo virsh autostart automaas-server
     sudo virsh start automaas-server
+
+- name: "Waiting for MAAS to became available"
+  wait_for:
+    host: 10.10.10.2
+    port: 5240
+    delay: 10
 
 
