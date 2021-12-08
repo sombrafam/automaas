@@ -10,11 +10,9 @@
 - name: "Download automaas image"
   get_url:
     dest: /home/ubuntu/VMStorage/Images/automaas-server-image.tar.xz
-#   url: http://192.168.15.20/automaas-images/automaas-server-image.tar.xz
-    url: https://people.canonical.com/~erlon/automaas-images/automaas-server-image.tar.xz
+    url: http://10.230.61.213/automaas-server-image.tar.xz
     tmp_dest: /home/ubuntu/VMStorage/Images
-#   checksum: md5:http://192.168.15.20/automaas-images/automaas-server-image.tar.xz.md5
-    checksum: md5:https://people.canonical.com/~erlon/automaas-images/automaas-server-image.tar.xz.md5
+    checksum: md5:http://10.230.61.213/automaas-server-image.tar.xz.md5
     mode: '0440'
     force: no
 
@@ -24,6 +22,14 @@
     dest: /home/ubuntu/VMStorage/Disks/
     remote_src: yes
     creates: /home/ubuntu/VMStorage/Disks/vmdisk-automaas-server.qcow2
+
+
+- name: Copy MAAS Server VM definition
+  copy:
+    src: "{{item}}"
+    dest: "/home/ubuntu/VMStorage/Disks/"
+  with_items:
+    - automaas-server.xml
 
 - name: "Create libvirt domain"
   shell: |
@@ -38,6 +44,9 @@
   wait_for:
     host: 10.10.10.2
     port: 5240
-    delay: 10
+    delay: 30
 
+- name: "Wait for BOOTP to became avaiable"
+  pause:
+    minutes: 3
 
