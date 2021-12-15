@@ -15,7 +15,7 @@ customer deployments.
 requirements are:
 
 - Bionic
-- >= 64GB of RAM
+- '>= 64GB of RAM'
 - SSH enabled and key-based, password-less access
 
 2. In your local environment, install ansible:
@@ -88,6 +88,9 @@ You can use virsh or virt-manager to create more VMs. Just make sure they are
 properly connected to the needed networks.
 
 ## Network configuration
+
+In case you want to use a similar to production network scheme, these are the
+networks created ando configured by default:
 
 | Fabric  |   Space   |    Subnet        |
 |---------|-----------|------------------|
