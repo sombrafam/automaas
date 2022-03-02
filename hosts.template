@@ -1,4 +1,7 @@
 all:
+  vars:
+    min_required_memory_mb: 32000
+    min_required_cpu: 16
   hosts:
     x1maas:
       ansible_user: ubuntu

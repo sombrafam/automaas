@@ -1,8 +1,8 @@
 - assert:
     that:
-        - ansible_memtotal_mb >= 5000
-        - ansible_processor_vcpus >= 2
-        - ansible_distribution_release == 'bionic'
+        - ansible_memtotal_mb >= {{ min_required_memory_mb }}
+        - ansible_processor_vcpus >= {{ min_required_cpu }}
+        - ansible_distribution_release == 'jammy'
 
 - name: "Testing internet access"
   wait_for:
@@ -16,8 +16,7 @@
 - name: "Install the packages"
   become: true
   apt:
-    name: [virtinst, cloud-image-utils, qemu-kvm, cloud-image-utils,
-    bridge-utils, libvirt-clients, libvirt-bin, maas-cli, jq]
+    name: [qemu-kvm, bridge-utils, maas-cli, jq]
     state: present
     update_cache: yes
     force_apt_get: yes
@@ -29,30 +28,9 @@
     name: systemd-networkd
     state: started
 
-- name: "Assure libvirtd is running"
+- name: "Assure lxd is running"
   become: true
   service:
-    name: libvirt-bin
+    name: snap.lxd.daemon
     state: started
 
-- name: "Enable password authentication"
-  become: true
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    state: present
-    regexp: '^PasswordAuthentication'
-    line: 'PasswordAuthentication yes'
-
-- name: "Set password for user ubuntu"
-  become: true
-  lineinfile:
-    path: /etc/shadow
-    state: present
-    regexp: '^ubuntu'
-    line: 'ubuntu:$6$uHJKDSG68qu4WnSQ$Jz13SwqtOPSRaLanTqYAlMdTpORMrzYl.tnGgGNSNBVmXDsv7/t2ibC3j2kC6/GGDMUKvBcbcX.ks2it1alKR0:18592:0:99999:7:::'
-
-- name: "Restart ssh service"
-  become: true
-  service:
-    name: ssh
-    state: restarted

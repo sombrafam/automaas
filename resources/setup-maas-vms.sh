@@ -17,3 +17,11 @@ maas $PROFILE interfaces read sttr3b | jq ".[] | \
 
 
 client = maas.client.connect("http://10.10.10.2:5240/MAAS/", apikey="Fa7X5ejRtzACur6PBh:YRxB9JRvf79S5xu7QY:jFbSUUwcvZRCDS8ATS832pJfPGNZfy9a")
+
+
+#maas setup from scratch
+sudo snap install maas
+sudo maas init region+rack --database-uri maas-test-db:///
+api_key=$(sudo maas apikey --username admin)
+# sudo maas login default http://10.212.123.163:5240/MAAS ${api_key}
+sudo maas-cli login -p default --apikey ${api_key} http://10.212.123.163:5240/MAAS

@@ -1,0 +1,32 @@
+# TODO: checks:
+# - At least 1 network should be routed
+# - Routed networks should have cidr
+# - resources defined on servers should fit into resources provides by the host
+# - bridge mapping interface should exist in the host
+
+networks:
+  admin:
+    routed: true
+    addr: 10.10.10.1/24
+  oam:
+    routed: true
+    addr: 10.10.20.1/24
+  ext:
+    bridge_mapping: ens3
+    routed: false
+    # addr: 10.10.10.0/24
+  internal:
+    routed: false
+    # addr: 10.10.10.0/24
+  public:
+    routed: false
+    # addr: 10.10.10.0/24
+servers:
+  count: 8
+  memory_gb: 8
+  cpus: 4
+  disks:
+    root: 20
+    data: 60
+
+bridge.hwaddr
