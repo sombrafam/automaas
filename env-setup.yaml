@@ -1,32 +1,58 @@
 # TODO: checks:
 # - At least 1 network should be routed
+# - At least 1 network should have DHCP
+# - Only 1 network should be DHCP
 # - Routed networks should have cidr
 # - resources defined on servers should fit into resources provides by the host
 # - bridge mapping interface should exist in the host
+maas:
+  maas-name: automaas-server
+  admin-user: admin
+  admin-passwd: admin
+  dns-addresses: 10.230.56.2
+  launchpad-ids:
+  cpus: 4
+  mem_gb: 8
 
 networks:
-  admin:
-    routed: true
-    addr: 10.10.10.1/24
-  oam:
-    routed: true
-    addr: 10.10.20.1/24
-  ext:
-    bridge_mapping: ens3
-    routed: false
-    # addr: 10.10.10.0/24
-  internal:
-    routed: false
-    # addr: 10.10.10.0/24
-  public:
-    routed: false
-    # addr: 10.10.10.0/24
-servers:
-  count: 8
-  memory_gb: 8
-  cpus: 4
-  disks:
-    root: 20
-    data: 60
+  - admin:
+      type: nat
+      addr: 10.10.10.1/24
+  - oam:
+      dhcp: true
+      type: isolated
+      addr: 10.10.20.1/24
+  - ext:
+      type: bridged
+      bridge_mapping: ens3
+      addr: 10.10.30.0/24
+  - internal:
+      type: isolated
+      addr: 10.10.40.0/24
+  - public:
+      type: isolated
+      addr: 10.10.50.0/24
 
-bridge.hwaddr
+servers:
+  - controller:
+      count: 3
+      memory_gb: 8
+      cpus: 4
+      disks:
+        root: 20
+
+  - lma:
+      count: 3
+      memory_gb: 4
+      cpus: 2
+      disks:
+        root: 20
+
+  - storage:
+      count: 6
+      memory_gb: 4
+      cpus: 1
+      disks:
+        root: 20
+        data1: 60
+        data2: 60
