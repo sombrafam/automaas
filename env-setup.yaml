@@ -16,16 +16,18 @@ maas:
 
 networks:
   - admin:
-      type: nat
-      addr: 10.10.10.1/24
+      type: isolated
+      addr: 10.10.10.0/24
+      mtu: 1500
   - oam:
       dhcp: true
-      type: isolated
-      addr: 10.10.20.1/24
+      type: nat
+      addr: 10.10.20.0/24
   - ext:
       type: bridged
       bridge_mapping: ens3
       addr: 10.10.30.0/24
+      mtu: 9000
   - internal:
       type: isolated
       addr: 10.10.40.0/24
