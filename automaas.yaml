@@ -1,10 +1,13 @@
-# TODO: checks:
 # - At least 1 network should be routed
 # - At least 1 network should have DHCP
 # - Only 1 network should be DHCP
 # - Routed networks should have cidr
 # - resources defined on servers should fit into resources provides by the host
-# - bridge mapping interface should exist in the host
+# - bridge mapped interfaces should exist in the host
+host:
+  networking_manager: lxd
+  virt_manager: libvirt
+
 maas:
   maas-name: automaas-server
   admin-user: admin
@@ -37,22 +40,22 @@ networks:
 
 servers:
   - controller:
-      count: 3
-      memory_gb: 8
+      count: 1
+      memory_gb: 2
       cpus: 4
       disks:
         root: 20
 
   - lma:
-      count: 3
-      memory_gb: 4
+      count: 2
+      memory_gb: 1
       cpus: 2
       disks:
         root: 20
 
   - storage:
-      count: 6
-      memory_gb: 4
+      count: 1
+      memory_gb: 2
       cpus: 1
       disks:
         root: 20
