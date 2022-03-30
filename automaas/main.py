@@ -42,7 +42,7 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter
     )
 
-    parser.add_argument("--config", required=True,
+    parser.add_argument("--config", required=False,
                         help="The config file with all options needed")
     args = parser.parse_args()
 

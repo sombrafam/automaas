@@ -45,15 +45,15 @@ class ConfigManager(object):
         self.networks = []
         self.servers = []
 
-        config_path = config_path if config_path else "automaas.yaml"
-        if not os.path.exists(config_path):
+        self.config_path = config_path if config_path else "automaas.yaml"
+        if not os.path.exists(self.config_path):
             log.error("Config file not found")
             exit(1)
 
         try:
-            self.config = open(config_path, "r").read()
+            self.config = open(self.config_path, "r").read()
         except Exception as e:
-            log.error("Error opening file {}".format(config_path))
+            log.error("Error opening file {}".format(self.config_path))
             log.exception("{}".format(e))
             exit(1)
 
@@ -112,10 +112,13 @@ class ConfigManager(object):
         log.debug("System avail mem: {}".format(system_mem_gb))
         log.debug("System avail disk: {}".format(system_disk_gb))
         if system_mem_gb < mem_required or system_disk_gb < disk_required:
-            log.error("Host does not have required disk/mem resources. "
-                      "Required: {}G/{}G, Avail: {}G/{}G".format(
-                disk_required, mem_required,
+            log.error("Host does not have required disk/mem resources. ")
+            log.error("Required mem: {}G. Required disk {}G.".format(
+                disk_required, mem_required))
+            log.error("Avail mem: {}G. Avail disk {}G.".format(
                 int(system_disk_gb), int(system_mem_gb)))
+            log.error("Use a bigger host or decrease resources "
+                      "defined in '{}'".format(self.config_path))
             exit(1)
 
         # TODO(erlon): Check bridge mapped interfaces should exist in the host
@@ -156,7 +159,6 @@ class HostManager(object):
                       "a focal release.".format(release))
             exit(1)
 
-        # host has enough men
         # host has internet access?
 
         pass
