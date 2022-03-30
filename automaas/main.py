@@ -46,7 +46,7 @@ def main():
                         help="The config file with all options needed")
     args = parser.parse_args()
 
-    host_man = am.HostManager(am.ConfigManager(args.config))
+    host_man = am.LXDManager(am.ConfigManager(args.config))
     host_man.host_check()
     host_man.install_packages()
 

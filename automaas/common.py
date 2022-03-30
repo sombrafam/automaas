@@ -114,9 +114,9 @@ class ConfigManager(object):
         if system_mem_gb < mem_required or system_disk_gb < disk_required:
             log.error("Host does not have required disk/mem resources. ")
             log.error("Required mem: {}G. Required disk {}G.".format(
-                disk_required, mem_required))
+                mem_required, disk_required))
             log.error("Avail mem: {}G. Avail disk {}G.".format(
-                int(system_disk_gb), int(system_mem_gb)))
+                int(system_mem_gb), int(system_disk_gb)))
             log.error("Use a bigger host or decrease resources "
                       "defined in '{}'".format(self.config_path))
             exit(1)
@@ -129,8 +129,8 @@ class HostManager(object):
     SNAP_DEPS = ""
 
     def __init__(self, config):
-        self.dpkg_deps = self.PKG_DEPS.split(',')
-        self.snap_deps = self.SNAP_DEPS.split(',')
+        self.dpkg_deps = list(filter(None, HostManager.PKG_DEPS.split(',')))
+        self.snap_deps = list(filter(None, HostManager.SNAP_DEPS.split(',')))
 
         self.confs = config
 
@@ -140,8 +140,8 @@ class HostManager(object):
     def _get_snaps_deps(self):
         return self.snap_deps
 
-    @staticmethod
     def _shell_run(self, cmd):
+        log.debug("Running CMD: {}".format(cmd))
         cmd = tuple(cmd.split())
         return subprocess.check_output(cmd)
 
@@ -166,8 +166,9 @@ class HostManager(object):
     @setup_step("Installing packages and required snaps")
     def install_packages(self):
         try:
-            self._shell_run("sudo apt-get install -y {}".format(
+            output = self._shell_run("sudo apt-get install -y {}".format(
                 " ".join(self.dpkg_deps)))
+            log.debug(output)
         except Exception as e:
             log.error("Error installing packages: {}".format(e))
             exit(1)
@@ -180,8 +181,12 @@ class HostManager(object):
                 snap_name = snap.split('==')[0]
                 snap_version = 'latest/stable'
 
-            self._shell_run('sudo snap install --channel={} {}'.format(
+            out = self._shell_run('sudo snap install --channel={} {}'.format(
                 snap_version, snap_name))
+            log.debug(out)
+            out = self._shell_run('sudo snap refresh --channel={} {}'.format(
+                snap_version, snap_name))
+            log.debug(out)
 
     def init_virtualization_manager(self):
         pass
@@ -209,20 +214,20 @@ class LXDManager(HostManager):
     PKG_DEPS = ""
     SNAP_DEPS = "lxd==4.23/stable"
 
-    def __init__(self):
-        super(LXDManager, self).__init__()
-        self.dpkg_deps.merge(self.PKG_DEPS.split(','))
-        self.snap_deps.merge(self.SNAP_DEPS.split(','))
+    def __init__(self, config):
+        super(LXDManager, self).__init__(config)
+        self.dpkg_deps += list(filter(None, LXDManager.PKG_DEPS.split(',')))
+        self.snap_deps += list(filter(None, LXDManager.SNAP_DEPS.split(',')))
 
 
 class LibvirtManager(HostManager):
     PKG_DEPS = ""
     SNAP_DEPS = ""
 
-    def __init__(self):
-        super(LibvirtManager, self).__init__()
-        self.dpkg_deps.merge(self.PKG_DEPS.split(','))
-        self.snap_deps.merge(self.SNAP_DEPS.split(','))
+    def __init__(self, config):
+        super(LibvirtManager, self).__init__(config)
+        self.dpkg_deps += list(filter(None, LibvirtManager.PKG_DEPS.split(',')))
+        self.snap_deps += list(filter(None, LibvirtManager.SNAP_DEPS.split(',')))
 
 
 class MAASManager(object):
