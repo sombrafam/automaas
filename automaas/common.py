@@ -40,6 +40,12 @@ def setup_step(phase):
     return decorator
 
 
+class DictConfs(object):
+    def __init__(self, config_dict):
+        for k, v in config_dict.items():
+            setattr(self, k, v)
+
+
 class ConfigManager(object):
     def __init__(self, config_path):
         self.networks = []
@@ -51,24 +57,42 @@ class ConfigManager(object):
             exit(1)
 
         try:
-            self.config = open(self.config_path, "r").read()
+            config_data = open(self.config_path, "r").read()
         except Exception as e:
             log.error("Error opening file {}".format(self.config_path))
             log.exception("{}".format(e))
             exit(1)
 
-        self._sanity_checks()
+        self._sanity_checks(config_data)
 
     @setup_step("Checking config for errors")
-    def _sanity_checks(self):
+    def _sanity_checks(self, config_data):
 
-        config_yaml = yaml.safe_load(self.config)
+        config_yaml = yaml.safe_load(config_data)
         for section in ['host', 'maas', 'networks', 'servers']:
             try:
                 config_yaml[section]
             except KeyError:
                 log.error("Missing config section {} in config file".format(
                     section))
+                exit(1)
+
+        for conf in ["networking_manager",
+                     "virt_manager", "lxd_storage_pool_size_gb"]:
+            try:
+                config_yaml["host"][conf]
+            except KeyError:
+                log.error("Missing config {} from [host] in config file".format(
+                    conf))
+                exit(1)
+
+        for conf in ["maas-name", "admin-user", "admin-passwd",
+                     "dns-addresses", "cpus", "mem_gb"]:
+            try:
+                config_yaml["maas"][conf]
+            except KeyError:
+                log.error("Missing config {} from [maas] in config file".format(
+                    conf))
                 exit(1)
 
         # - At least 1 network should be routed
@@ -123,6 +147,9 @@ class ConfigManager(object):
 
         # TODO(erlon): Check bridge mapped interfaces should exist in the host
 
+        self.host = DictConfs(config_yaml['host'])
+        self.maas = DictConfs(config_yaml['maas'])
+
 
 class HostManager(object):
     PKG_DEPS = "qemu-kvm,bridge-utils"
@@ -132,7 +159,7 @@ class HostManager(object):
         self.dpkg_deps = list(filter(None, HostManager.PKG_DEPS.split(',')))
         self.snap_deps = list(filter(None, HostManager.SNAP_DEPS.split(',')))
 
-        self.confs = config
+        self.config = config
 
     def _get_package_deps(self):
         return self.dpkg_deps
@@ -181,53 +208,14 @@ class HostManager(object):
                 snap_name = snap.split('==')[0]
                 snap_version = 'latest/stable'
 
+            # FIXME(erlon): we always call install -> refresh, but we could
+            #  check if the snap is installed and avoid calling twice.
             out = self._shell_run('sudo snap install --channel={} {}'.format(
                 snap_version, snap_name))
             log.debug(out)
             out = self._shell_run('sudo snap refresh --channel={} {}'.format(
                 snap_version, snap_name))
             log.debug(out)
-
-    def init_virtualization_manager(self):
-        pass
-
-    def init_network_manager(self):
-        pass
-
-    def _create_network(self):
-        pass
-
-    def setup_networks(self):
-        pass
-
-    def _create_vm(self):
-        pass
-
-    def create_maas_vm(self):
-        pass
-
-    def setup_vms(self):
-        pass
-
-
-class LXDManager(HostManager):
-    PKG_DEPS = ""
-    SNAP_DEPS = "lxd==4.23/stable"
-
-    def __init__(self, config):
-        super(LXDManager, self).__init__(config)
-        self.dpkg_deps += list(filter(None, LXDManager.PKG_DEPS.split(',')))
-        self.snap_deps += list(filter(None, LXDManager.SNAP_DEPS.split(',')))
-
-
-class LibvirtManager(HostManager):
-    PKG_DEPS = ""
-    SNAP_DEPS = ""
-
-    def __init__(self, config):
-        super(LibvirtManager, self).__init__(config)
-        self.dpkg_deps += list(filter(None, LibvirtManager.PKG_DEPS.split(',')))
-        self.snap_deps += list(filter(None, LibvirtManager.SNAP_DEPS.split(',')))
 
 
 class MAASManager(object):

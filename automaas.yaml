@@ -7,13 +7,13 @@
 host:
   networking_manager: lxd
   virt_manager: libvirt
+  lxd_storage_pool_size_gb: 100
 
 maas:
   maas-name: automaas-server
   admin-user: admin
   admin-passwd: admin
   dns-addresses: 10.230.56.2
-  launchpad-ids:
   cpus: 4
   mem_gb: 8
 

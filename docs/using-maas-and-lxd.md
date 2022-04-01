@@ -256,9 +256,6 @@ devices:
     path: /
     pool: default
     type: disk
-#  data:
-#    type: disk
-#    source: ${loopdevice}
 EOF
 
 LXC_IMAGE=68a5aa67379d # ubuntu/focal

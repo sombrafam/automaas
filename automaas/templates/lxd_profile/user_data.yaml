@@ -1,0 +1,18 @@
+#cloud-config
+ssh_pwauth: yes
+
+users:
+  - name: ubuntu
+    lock_passwd: false
+    groups: lxd
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - __SSH_KEY__
+    ssh_import_id:
+      - lp:__LP_ID__
+
+growpart:
+  mode: auto
+  devices: ['/']
+  ignore_growroot_disabled: false

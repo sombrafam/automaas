@@ -1,0 +1,9 @@
+networks:
+- config:
+    ipv4.address: __IPV4_ADDR__
+    ipv4.nat: __IPV4__NAT__
+    mtu: 1500
+  description: "This is an automaas generated network: "
+  name: __NAME__
+  type: __TYPE__
+  project: default

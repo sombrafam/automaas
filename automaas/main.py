@@ -16,6 +16,7 @@ import argparse
 import logging
 
 from automaas import common as am
+from automaas import lxd
 
 log = logging.getLogger("automaas")
 formatter = logging.Formatter('%(levelname)s: %(message)s')
@@ -46,9 +47,11 @@ def main():
                         help="The config file with all options needed")
     args = parser.parse_args()
 
-    host_man = am.LXDManager(am.ConfigManager(args.config))
+    host_man = lxd.LXDManager(am.ConfigManager(args.config))
     host_man.host_check()
     host_man.install_packages()
+    host_man.init_virtualization_manager()
+
 
     exit(0)
 

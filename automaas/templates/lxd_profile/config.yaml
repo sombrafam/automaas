@@ -1,0 +1,7 @@
+name: __SERVER_NAME__
+description: __SERVER_DESCRIPTION__
+config:
+  limits.memory: __MEM_SIZE__
+  limits.cpu: __CPUS__
+  user.network-config: __NET_CONFIG__
+  user.user-data: __USER_DATA__
