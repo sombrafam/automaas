@@ -1,0 +1,90 @@
+config:
+  limits.cpu: 4
+  limits.memory: 8
+  user.network-config:
+    ethernets:
+      admin:
+        addresses:
+        - 10.10.10.2
+        dhcp4: false
+        match:
+          macaddress: 0a:0b:0c:0d:0:02
+      ext:
+        addresses:
+        - 10.10.30.2
+        dhcp4: false
+        match:
+          macaddress: 0a:0b:0c:0d:2:02
+      internal:
+        addresses:
+        - 10.10.40.2
+        dhcp4: false
+        match:
+          macaddress: 0a:0b:0c:0d:3:02
+      oam:
+        addresses:
+        - 10.10.20.2
+        dhcp4: false
+        gateway4: 10.10.20.1
+        match:
+          macaddress: 0a:0b:0c:0d:1:02
+        nameservers:
+          addresses:
+          - 10.230.56.2
+          search:
+          - segmaas.1ss
+      public:
+        addresses:
+        - 10.10.50.2
+        dhcp4: false
+        match:
+          macaddress: 0a:0b:0c:0d:4:02
+    version: 2
+  user.user-data:
+    growpart:
+      devices:
+      - /
+      ignore_growroot_disabled: false
+      mode: auto
+    ssh_pwauth: 'yes'
+    users:
+    - groups: lxd
+      lock_passwd: 'false'
+      name: ubuntu
+      shell: /bin/bash
+      ssh_authorized_keys:
+      - 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBZNSEkkkawPaeuwjJ6zn9z32i2t61OqGFwNnhrW5lRFPnMiHO0Dj6tYnAfvcVQYrXR/MaFV90oAHAzgClvGeB7RrUsT0YFOloCJTL86mu2lITymKGUqS8m1Uu+H5rdQXE6lf9fJNVJ2bzFPi+dJLLjE+GZmLRzi7XAJljVDgRfUFAMmMQySjAsTM908Zd9UeD3PO7oSnkJpw2N9gKg/Z8VXfrC1NQrGLLDEhuC9plsmxmTOoCp/GrRALX3ldTDwiARpnBSXondqqqP0GSDsE/xfq3+3MVO/+/hGK8zuIjsBgGWNErnmYdsgOttY2IHxXa77aF124eIkDavQdehWTX
+        erlon@thinktad-t400
+
+        '
+      ssh_import_id:
+      - 'lp: sombrafam'
+      sudo: 'ALL = (ALL) NOPASSWD: ALL'
+description: MAAS Server Profile
+devices:
+  admin:
+    hwaddr: 0a:0b:0c:0d:0:02
+    name: admin
+    network: admin
+    type: nic
+  ext:
+    hwaddr: 0a:0b:0c:0d:2:02
+    name: ext
+    network: ext
+    type: nic
+  internal:
+    hwaddr: 0a:0b:0c:0d:3:02
+    name: internal
+    network: internal
+    type: nic
+  oam:
+    hwaddr: 0a:0b:0c:0d:1:02
+    name: oam
+    network: oam
+    type: nic
+  public:
+    hwaddr: 0a:0b:0c:0d:4:02
+    name: public
+    network: public
+    type: nic
+name: MAAS Server Profile

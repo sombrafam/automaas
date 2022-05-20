@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import ipaddress
 import logging
 import lsb_release
 import os
@@ -22,6 +23,22 @@ import yaml
 
 
 log = logging.getLogger("automaas")
+
+
+STDOUT = -2
+
+CONFIG_SECTIONS = ['host', 'maas', 'networks', 'servers']
+REQUIRED_CONFIG_OPTS = {'host': ['ssh_key_path', 'lxd_storage_pool_size_gb'],
+                        'maas': ["hostname", "admin_user", "admin_passwd",
+                                 "dns_addresses"]
+                        }
+OPTIONAL_CONFIG_OPTS = {'host': {'networking_manager': 'lxd',
+                                 'virt_manager': 'lxd',
+                                 'lp_id': ''},
+                        'maas': {'dns_search': 'localhost',
+                                 'cpus': 4,
+                                 'mem_gb': 8}
+                        }
 
 
 def setup_step(phase):
@@ -69,7 +86,7 @@ class ConfigManager(object):
     def _sanity_checks(self, config_data):
 
         config_yaml = yaml.safe_load(config_data)
-        for section in ['host', 'maas', 'networks', 'servers']:
+        for section in CONFIG_SECTIONS:
             try:
                 config_yaml[section]
             except KeyError:
@@ -77,35 +94,49 @@ class ConfigManager(object):
                     section))
                 exit(1)
 
-        for conf in ["networking_manager",
-                     "virt_manager", "lxd_storage_pool_size_gb"]:
-            try:
-                config_yaml["host"][conf]
-            except KeyError:
-                log.error("Missing config {} from [host] in config file".format(
-                    conf))
-                exit(1)
+        for section, opts in REQUIRED_CONFIG_OPTS.items():
+            for opt in opts:
+                try:
+                    config_yaml[section][opt]
+                except KeyError:
+                    log.error(
+                        "Missing config {} from [{}] in config file".format(
+                            opt, section)
+                    )
+                    exit(1)
 
-        for conf in ["maas-name", "admin-user", "admin-passwd",
-                     "dns-addresses", "cpus", "mem_gb"]:
-            try:
-                config_yaml["maas"][conf]
-            except KeyError:
-                log.error("Missing config {} from [maas] in config file".format(
-                    conf))
-                exit(1)
+        for section, opts in OPTIONAL_CONFIG_OPTS.items():
+            for key, val in opts.items():
+                try:
+                    config_yaml[section][key]
+                except KeyError:
+                    config_yaml[section][key] = val
+                    log.debug(
+                        "Using default value for [{}] option {}: {}".format(
+                            section, key, val))
 
         # - At least 1 network should be routed
         # - At least 1 network should have DHCP
         # - Only 1 network should be DHCP
+        # - addr is valid
         routed = dhcped = 0
+        mac_idx = 0
         for net in list(config_yaml['networks']):
-            self.networks.append(net)
+            net_name = list(net.keys())[0]
             net = list(net.values())[0]
+            net['name'] = net_name
+            net['mac_id'] = "%02x" % mac_idx
+            mac_idx += 1
             if net.get('type') == "nat":
                 routed += 1
             if net.get('dhcp'):
                 dhcped += 1
+            net['addr'] = ipaddress.IPv4Network(net.get('addr'))
+
+            if not net.get('mtu'):
+                net['mtu'] = 1500
+
+            self.networks.append(DictConfs(net))
 
         if dhcped != 1:
             log.error("There should be at least and at most 1 DHCP network "
@@ -167,10 +198,13 @@ class HostManager(object):
     def _get_snaps_deps(self):
         return self.snap_deps
 
-    def _shell_run(self, cmd):
+    def _shell_run(self, cmd, stdin=None):
         log.debug("Running CMD: {}".format(cmd))
         cmd = tuple(cmd.split())
-        return subprocess.check_output(cmd)
+        out = subprocess.check_output(cmd, input=stdin,
+                                      stderr=subprocess.STDOUT)
+        log.debug(out.decode('UTF-8').replace('\n', '\n  '))
+        return out
 
     @setup_step("Checking host requirements")
     def host_check(self):
@@ -215,7 +249,6 @@ class HostManager(object):
             log.debug(out)
             out = self._shell_run('sudo snap refresh --channel={} {}'.format(
                 snap_version, snap_name))
-            log.debug(out)
 
 
 class MAASManager(object):

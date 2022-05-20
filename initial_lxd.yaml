@@ -1,0 +1,58 @@
+config: {}
+networks:
+- config:
+    bridge.mtu: 1500
+    ipv4.address: 10.10.10.1/24
+    ipv4.nat: 'false'
+  description: 'This is an automaas generated network: admin'
+  name: admin
+  project: default
+  type: bridge
+- config:
+    bridge.mtu: 1500
+    ipv4.address: 10.10.20.1/24
+    ipv4.nat: 'true'
+  description: 'This is an automaas generated network: oam'
+  name: oam
+  project: default
+  type: bridge
+- config:
+    bridge.mtu: 9000
+    ipv4.address: 10.10.30.1/24
+    ipv4.nat: 'false'
+  description: 'This is an automaas generated network: ext'
+  name: ext
+  project: default
+  type: bridge
+- config:
+    bridge.mtu: 1500
+    ipv4.address: 10.10.40.1/24
+    ipv4.nat: 'false'
+  description: 'This is an automaas generated network: internal'
+  name: internal
+  project: default
+  type: bridge
+- config:
+    bridge.mtu: 1500
+    ipv4.address: 10.10.50.1/24
+    ipv4.nat: 'false'
+  description: 'This is an automaas generated network: public'
+  name: public
+  project: default
+  type: bridge
+projects:
+- config:
+    features.images: 'true'
+    features.networks: 'true'
+    features.profiles: 'true'
+    features.storage.volumes: 'true'
+  description: Default LXD project
+  name: default
+storage_pools:
+- config:
+    size: 100GB
+    source: /var/snap/lxd/common/lxd/disks/automaas.img
+    zfs.pool_name: automaas
+  description: ''
+  driver: zfs
+  name: automaas

@@ -315,9 +315,10 @@ PROFILE=admin
 maas $PROFILE boot-source-selections create 1 \
     os="ubuntu" release="bionic" arches="amd64" \
     subarches="*" labels="*"
-    maas $PROFILE boot-source-selections create 1 \
+maas $PROFILE boot-source-selections create 1 \
     os="ubuntu" release="focal" arches="amd64" \
     subarches="*" labels="*"
+
 maas $PROFILE boot-resources import
 maas $PROFILE boot-resources read
 
@@ -402,9 +403,12 @@ lxc delete vm --force
 LXC_IMAGE=6bc6c743ff33 # ubuntu/focal/cloud
 LXC_IMAGE=ubuntu/focal/cloud/amd64
 sudo lxc init --vm images:${LXC_IMAGE} vm2 --profile vms -c security.secureboot=false
+sudo lxc config device override vm2 root size=${DATA_DISK_SIZE}
+lxc start vm2
+lxc console vm2
+
 
 lxc init vm1 --empty --vm -c limits.cpu=4 -c limits.memory=8GiB -c security.secureboot=false --profile vms
-
 sudo lxc config device override vm1 root size=${DATA_DISK_SIZE}
 lxc start vm1
 lxc console vm1

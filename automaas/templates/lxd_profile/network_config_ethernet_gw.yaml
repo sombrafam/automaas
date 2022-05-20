@@ -15,3 +15,7 @@ ethernets:
     dhcp4: __DHCP__
     addresses:
       - __CIDR__
+    gateway4: __GW__
+    nameservers:
+      search: [_NS_SEARCH_]
+      addresses: [__NS__]
