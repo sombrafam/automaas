@@ -73,18 +73,28 @@ class LXDManager(HostManager):
         self._shell_run("sudo lxd init --preseed", stdin=data.encode())
 
     def _build_maas_profile(self):
+        maas_profile = dict()
+        maas_profile['name'] = "maas_server_profile"
+        maas_profile['description'] = "MAAS Server Profile"
+
+        return self._build_vm_profile(2, self.config.maas.cpus,
+                                      self.config.maas.mem_gb, maas_profile)
+
+    def _build_vm_profile(self, id, cpus, mem, profile={}):
+
         def _make_cmd(cmd):
             cmd = list(cmd.split())
             return cmd
 
-        maas = dict()
-        maas['name'] = "MAAS Server Profile"
-        maas['description'] = "MAAS Server Profile"
-        maas['config'] = dict()
-        maas['devices'] = dict()
+        profile['name'] = profile.get('name', "automaas-profile-{}".format(id))
+        profile['description'] = profile.get('description',
+                                             "MAAS Server Profile")
+        profile['config'] = dict()
+        profile['devices'] = dict()
 
-        maas['config']['limits.memory'] = "%sGB" % self.config.maas.mem_gb
-        maas['config']['limits.cpu'] = self.config.maas.cpus
+        profile['config']['limits.memory'] = "%sGB" % mem
+        profile['config']['limits.cpu'] = cpus
+
         # user.network-config
         net_config = dict()
 
@@ -93,7 +103,7 @@ class LXDManager(HostManager):
         for net in self.config.networks:
             net_dev = dict()
             device_mac = "%s:%s:%s:%s:%s:%s" % (
-                "0a", "0b", "0c", "0d", net.mac_id, "02")
+                "0a", "0b", "0c", "0d", net.mac_id, "%02x" % id)
 
             net_dev[net.name] = {
                 'name': net.name,
@@ -107,7 +117,7 @@ class LXDManager(HostManager):
             net_config_values[net.name] = {
                 'match': {'macaddress': device_mac},
                 'dhcp4': False,
-                'addresses': ['%s/%s' % (str(net.addr[2]), net.addr.prefixlen)]
+                'addresses': ['%s/%s' % (str(net.addr[id]), net.addr.prefixlen)]
             }
 
             if net.type == "nat":
@@ -121,12 +131,12 @@ class LXDManager(HostManager):
                 net_config_values[net.name].update(updates)
 
             net_config['ethernets'].update(net_config_values)
-            maas['devices'].update(net_dev)
+            profile['devices'].update(net_dev)
 
-        maas['devices']['root'] = {'path': '/',
+        profile['devices']['root'] = {'path': '/',
                                    'pool': 'automaas',
                                    'type': 'disk'}
-        maas['config']['user.network-config'] = yaml.safe_dump(net_config)
+        profile['config']['user.network-config'] = yaml.safe_dump(net_config)
 
         try:
             ssh_key = open(self.config.host.ssh_key_path).read().strip()
@@ -154,22 +164,17 @@ class LXDManager(HostManager):
             'ignore_growroot_disabled': False,
         }
 
-        # FIXME: The image i've trying does not have ssh-import installed so
-        #  this is failling. See: https://github.com/lxc/lxc-ci/issues/132
-        # if len(self.config.host.lp_id) > 0:
-        #    user_data['users'][0].update(
-        #        {'ssh_import_id': ["lp: {}".format(self.config.host.lp_id)]}
-        #    )
         user_data['packages'] = ['python3', 'openssh-server', 'ssh-import-id']
         user_data['runcmd'] = []
         user_data['runcmd'].append(
-            _make_cmd("ssh-import-id-lp lp:{}".format(self.config.host.lp_id)))
+            _make_cmd("sudo -u ubuntu ssh-import-id-lp {}".format(
+                self.config.host.lp_id)))
         user_data['runcmd'].append(_make_cmd("sudo usermod -p \"\" ubuntu"))
 
-        maas['config']['user.user-data'] = (
+        profile['config']['user.user-data'] = (
                 "#cloud-config\n" + yaml.safe_dump(
             user_data, sort_keys=False, indent=2))
-        return maas
+        return profile
 
     @setup_step("Creating MAAS Container")
     def create_maas_container(self):
@@ -178,7 +183,7 @@ class LXDManager(HostManager):
         yaml.safe_dump(maas_profile, open("maas_profile.yaml", "w"))
         data = yaml.safe_dump(maas_profile, None)
         try:
-            self._shell_run("sudo lxc profile delete maas_server_profile")
+            self._shell_run("sudo lxc profile delete maas-server-profile")
         except subprocess.CalledProcessError as e:
             if "Profile is currently in use" in str(e.output):
                 log.error("Deleting previous automaas profile. The profile is "
@@ -186,9 +191,14 @@ class LXDManager(HostManager):
                           "manually and try again.")
                 exit(1)
 
-        self._shell_run("sudo lxc profile create maas_server_profile")
-        self._shell_run("sudo lxc profile edit maas_server_profile",
+        self._shell_run("sudo lxc profile create maas-server-profile")
+        self._shell_run("sudo lxc profile edit maas-server-profile",
                         stdin=data.encode())
+        self._shell_run("sudo lxc init images:ubuntu/focal/cloud "
+                        "automaas-container --profile maas-server-profile")
+        self._shell_run("sudo lxc config device override automaas-container "
+                        "root size=30GB")
+        self._shell_run("sudo lxc start automaas-container")
 
     def _create_vm(self):
         pass

@@ -1,22 +1,48 @@
-# - At least 1 network should be routed
-# - At least 1 network should have DHCP
-# - Only 1 network should be DHCP
-# - Routed networks should have cidr
-# - resources defined on servers should fit into resources provides by the host
-# - bridge mapped interfaces should exist in the host
+# This is the definition file used to define the MAAS networks, MAAS server
+# configuration and interfaces used by each host created using automaas. Please
+# note that:
+#
+# - At least 1 network should be routed;
+# - At least 1 network should have DHCP;
+# - Only 1 network should be DHCP;
+# - Routed networks should have cidr;
+# - resources defined for servers should fit into resources available in the
+#   host;
+# - bridge mapped interfaces should exist in the host;
+# - '*' values are required;
+
+# [host]
+#    ssh_key_path*: [/path/key.pub] - This key will be injected into the hosts.
+#    lxd_storage_pool_size_gb*: [int]
+#    networking_manager: [lxd|libvirt] - How/who does the bridge creation and
+#                       networking in the host. Currently only lxd is supported.
+#    virt_manager: libvirt [lxd|libvirt]
+#    lp_id: [launchpadid]
 host:
   networking_manager: lxd
   virt_manager: libvirt
   lxd_storage_pool_size_gb: 100
+  lp_id: sombrafam
+  ssh_key_path: '/home/erlon/.ssh/id_rsa.pub'
 
+# [maas]
+#   hostname*: [thehostname] - the hostname the maas container will receive
+#   admin_user*: [maasadminuser]
+#   admin_passwd*: [maasadminpasswd]
+#   dns_addresses*: 10.230.56.2 - DNS user by MAAS
+#   dns_search: [segmaas.1ss] - DNS search. Defaults to 'localhost'
+#   cpus: [int] - Number of CPUs for the MAAS VM. Defaults to 4
+#   mem_gb: [int] - Ammount of memory for the MAAS VM. Defaults to 8
 maas:
-  maas-name: automaas-server
-  admin-user: admin
-  admin-passwd: admin
-  dns-addresses: 10.230.56.2
+  hostname: automaas-server
+  admin_user: admin
+  admin_passwd: admin
+  dns_addresses: 8.8.8.8
+  dns_search: segmaas.1ss
   cpus: 4
   mem_gb: 8
 
+# TODO: Continue to document this
 networks:
   - admin:
       type: isolated
@@ -44,20 +70,20 @@ servers:
       memory_gb: 2
       cpus: 4
       disks:
-        root: 20
+        root: 10
 
   - lma:
       count: 2
       memory_gb: 1
       cpus: 2
       disks:
-        root: 20
+        root: 10
 
   - storage:
       count: 1
       memory_gb: 2
       cpus: 1
       disks:
-        root: 20
-        data1: 60
-        data2: 60
+        root: 10
+        data1: 20
+        data2: 20

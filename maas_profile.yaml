@@ -16,8 +16,8 @@ config:
     \  sudo: 'ALL = (ALL) NOPASSWD: ALL'\n  ssh_authorized_keys:\n  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBZNSEkkkawPaeuwjJ6zn9z32i2t61OqGFwNnhrW5lRFPnMiHO0Dj6tYnAfvcVQYrXR/MaFV90oAHAzgClvGeB7RrUsT0YFOloCJTL86mu2lITymKGUqS8m1Uu+H5rdQXE6lf9fJNVJ2bzFPi+dJLLjE+GZmLRzi7XAJljVDgRfUFAMmMQySjAsTM908Zd9UeD3PO7oSnkJpw2N9gKg/Z8VXfrC1NQrGLLDEhuC9plsmxmTOoCp/GrRALX3ldTDwiARpnBSXondqqqP0GSDsE/xfq3+3MVO/+/hGK8zuIjsBgGWNErnmYdsgOttY2IHxXa77aF124eIkDavQdehWTX\n\
     \    erlon@thinktad-t400\ngrowpart:\n  mode: auto\n  devices:\n  - /\n  ignore_growroot_disabled:\
     \ false\npackages:\n- python3\n- openssh-server\n- ssh-import-id\nruncmd:\n- -\
-    \ ssh-import-id-lp\n  - lp:sombrafam\n- - sudo\n  - usermod\n  - -p\n  - '\"\"\
-    '\n  - ubuntu\n"
+    \ sudo\n  - -u\n  - ubuntu\n  - ssh-import-id-lp\n  - sombrafam\n- - sudo\n  -\
+    \ usermod\n  - -p\n  - '\"\"'\n  - ubuntu\n"
 description: MAAS Server Profile
 devices:
   admin:
@@ -49,4 +49,4 @@ devices:
     path: /
     pool: automaas
     type: disk
-name: MAAS Server Profile
+name: maas_server_profile
