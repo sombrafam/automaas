@@ -16,6 +16,7 @@ import ipaddress
 import logging
 import lsb_release
 import os
+import paramiko
 import psutil
 import subprocess
 import sys
@@ -28,7 +29,7 @@ log = logging.getLogger("automaas")
 STDOUT = -2
 
 CONFIG_SECTIONS = ['host', 'maas', 'networks', 'servers']
-REQUIRED_CONFIG_OPTS = {'host': ['ssh_key_path', 'lxd_storage_pool_size_gb'],
+REQUIRED_CONFIG_OPTS = {'host': ['ssh_pubkey_path', 'ssh_privkey_path', 'lxd_storage_pool_size_gb'],
                         'maas': ["hostname", "admin_user", "admin_passwd",
                                  "dns_addresses"]
                         }
@@ -55,6 +56,17 @@ def setup_step(phase):
             return result
         return wrapper
     return decorator
+
+
+def ssh_run_cmd(host_info, cmd, timeout=30):
+    log.debug("Running command: {}".format(cmd))
+    with paramiko.SSHClient() as ssh:
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(host_info.ipaddr, username='ubuntu',
+                    key_filename=host_info.pkey)
+        i, o, e = ssh.exec_command(cmd)
+        log.debug("Out: {}".format(o.read()))
+        log.debug("Err: {}".format(e.read()))
 
 
 class DictConfs(object):
@@ -127,11 +139,15 @@ class ConfigManager(object):
             net['name'] = net_name
             net['mac_id'] = "%02x" % mac_idx
             mac_idx += 1
+            net['addr'] = ipaddress.IPv4Network(net.get('addr'))
+
             if net.get('type') == "nat":
                 routed += 1
+                config_yaml['maas']['ip'] = net['addr'][2]
+
             if net.get('dhcp'):
                 dhcped += 1
-            net['addr'] = ipaddress.IPv4Network(net.get('addr'))
+
 
             if not net.get('mtu'):
                 net['mtu'] = 1500

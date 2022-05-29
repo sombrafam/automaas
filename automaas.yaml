@@ -12,7 +12,9 @@
 # - '*' values are required;
 
 # [host]
-#    ssh_key_path*: [/path/key.pub] - This key will be injected into the hosts.
+#    ssh_privkey_path*: [/path/key.pub] - This key will be used to ssh to the
+#                      hosts when needed
+#    ssh_pubkey_path*: [/path/key.pub] - This key will be injected into the hosts.
 #    lxd_storage_pool_size_gb*: [int]
 #    networking_manager: [lxd|libvirt] - How/who does the bridge creation and
 #                       networking in the host. Currently only lxd is supported.
@@ -23,7 +25,8 @@ host:
   virt_manager: libvirt
   lxd_storage_pool_size_gb: 100
   lp_id: sombrafam
-  ssh_key_path: '/home/erlon/.ssh/id_rsa.pub'
+  ssh_privkey_path: '/home/erlon/.ssh/id_rsa'
+  ssh_pubkey_path: '/home/erlon/.ssh/id_rsa.pub'
 
 # [maas]
 #   hostname*: [thehostname] - the hostname the maas container will receive

@@ -1,10 +1,14 @@
 import logging
 import subprocess
 import os
+import paramiko
+import time
 import yaml
 
+from automaas.common import DictConfs
 from automaas.common import HostManager
 from automaas.common import setup_step
+from automaas.common import ssh_run_cmd
 import automaas.yaml_helpers as yhelper
 
 log = logging.getLogger("automaas")
@@ -139,7 +143,7 @@ class LXDManager(HostManager):
         profile['config']['user.network-config'] = yaml.safe_dump(net_config)
 
         try:
-            ssh_key = open(self.config.host.ssh_key_path).read().strip()
+            ssh_key = open(self.config.host.ssh_pubkey_path).read().strip()
         except Exception as e:
             log.warning("Error loading SSH Key")
             log.exception("{}".format(e))
@@ -164,13 +168,11 @@ class LXDManager(HostManager):
             'ignore_growroot_disabled': False,
         }
 
-        user_data['packages'] = ['python3', 'openssh-server', 'ssh-import-id']
-        user_data['runcmd'] = []
-        user_data['runcmd'].append(
-            _make_cmd("sudo -u ubuntu ssh-import-id-lp {}".format(
-                self.config.host.lp_id)))
+        user_data['packages'] = ['python3', 'openssh-server',
+                                 'ssh-import-id', 'snapd']
+        user_data['runcmd'] = list()
+        # This is to unlock the user that is locked by default
         user_data['runcmd'].append(_make_cmd("sudo usermod -p \"\" ubuntu"))
-
         profile['config']['user.user-data'] = (
                 "#cloud-config\n" + yaml.safe_dump(
             user_data, sort_keys=False, indent=2))
@@ -200,10 +202,56 @@ class LXDManager(HostManager):
                         "root size=30GB")
         self._shell_run("sudo lxc start automaas-container")
 
-    def _create_vm(self):
-        pass
+    @setup_step("Waiting for MAAS to became online")
+    def wait_for_maas_container(self):
+        # wait for server to came online
+        while True:
+            log.debug("Waiting for MaaS server to became online")
+            maas_configs = DictConfs(
+                {'ipaddr': str(self.config.maas.ip),
+                 'pkey': self.config.host.ssh_privkey_path})
 
-    def create_maas_vm(self):
+            try:
+                import sys
+                sys.stderr = None
+                sys.stderr = None
+                log.debug("Connecting to: {}".format(self.config.maas.ip))
+                ssh_run_cmd(maas_configs, 'hostname', timeout=1)
+                break
+            except (paramiko.ssh_exception.NoValidConnectionsError,
+                    paramiko.ssh_exception.SSHException):
+                pass
+
+            time.sleep(1)
+
+    @setup_step("Initializing MAAS")
+    def initialize_maas_container(self):
+        maas_configs = DictConfs(
+            {'ipaddr': str(self.config.maas.ip),
+             'pkey': self.config.host.ssh_privkey_path})
+
+        log.info("Installing snaps")
+        ssh_run_cmd(maas_configs, "sudo snap install --channel=3.1/stable maas")
+        ssh_run_cmd(maas_configs, "sudo snap install maas-test-db")
+        log.info("Initializing region+rack")
+        ssh_run_cmd(maas_configs, "sudo maas init region+rack --database-uri "
+                    "\"maas-test-db:///\" "
+                    "--maas-url \"http://10.10.20.2:5240/MAAS\"  "
+                    "--num-workers 4  --enable-debug  --admin-username admin "
+                    "--admin-password admin "
+                    "--admin-ssh-import {}".format(self.config.host.lp_id))
+
+        ssh_run_cmd(maas_configs, "echo 'debug: true' | sudo tee -a /var/snap/maas/current/rackd.conf")
+        ssh_run_cmd(maas_configs, "echo 'debug: true' | sudo tee -a /var/snap/maas/current/regiond.conf")
+        ssh_run_cmd(maas_configs, "sudo snap restart maas")
+        log.info("Creating admin user")
+        ssh_run_cmd(maas_configs, "sudo maas createadmin --username admin "
+                    "--password admin --email admin@mymaas.com "
+                    "--ssh-import {}".format(self.config.host.lp_id))
+        ssh_run_cmd(maas_configs, "sudo maas apikey --username=admin | "
+                    "tee ~/maas-apikey.txt")
+
+    def _create_vm(self):
         pass
 
     def setup_vms(self):

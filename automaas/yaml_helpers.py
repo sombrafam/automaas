@@ -14,7 +14,7 @@ def loader(path, replace_keys=None):
             data.replace(key, value)
 
     try:
-        ret = yaml.load(data)
+        ret = yaml.safe_load(data)
     except Exception as e:
         log.error("Error loading YAML file {}".format(path))
         log.debug("{}".format(e))

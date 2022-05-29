@@ -52,7 +52,8 @@ def main():
     host_man.install_packages()
     host_man.init_virtualization_manager()
     host_man.create_maas_container()
-
+    host_man.wait_for_maas_container()
+    host_man.initialize_maas_container()
     exit(0)
 
 

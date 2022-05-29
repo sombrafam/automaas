@@ -272,6 +272,7 @@ Inside the maas container, run the following steps:
 0. Install packages from this list:
 
 ```sh
+sudo apt-get install snapd
 sudo snap install --channel=3.1/stable maas
 sudo snap install maas-test-db
 ```
@@ -292,22 +293,20 @@ sudo maas init region+rack\
     --admin-password ${PASSWD}\
     --admin-ssh-import ${PASSWD}
 
+# enable MAAS debugs
 echo 'debug: true' | sudo tee -a /var/snap/maas/current/rackd.conf
 echo 'debug: true' | sudo tee -a /var/snap/maas/current/regiond.conf
 sudo snap restart maas
 
 sudo maas createadmin --username admin --password admin --email admin@mymaas.com --ssh-import sombrafam
 sudo maas apikey --username=admin | tee ~/maas-apikey.txt
-
-# enable MAAS debugs
-maas login admin http://10.10.20.2:5240/MAAS/ `cat ~/maas-apikey.txt`
 ```
 
 2. MAAS Initial configuration
 
 
 ```sh
-
+maas login admin http://10.10.20.2:5240/MAAS/ `cat ~/maas-apikey.txt`
 UPSTREAM_DNS=10.230.56.2
 maas admin maas set-config name=upstream_dns value=${UPSTREAM_DNS}
 
