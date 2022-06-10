@@ -47,13 +47,20 @@ def main():
                         help="The config file with all options needed")
     args = parser.parse_args()
 
-    host_man = lxd.LXDManager(common.ConfigManager(args.config))
-    # host_man.host_check()
-    host_man.install_packages()
-    host_man.init_virtualization_manager()
-    host_man.create_maas_container()
-    host_man.wait_for_maas_container()
-    host_man.initialize_maas_container()
+    try:
+        host_man = lxd.LXDManager(common.ConfigManager(args.config))
+        # host_man.host_check()
+        host_man.install_packages()
+        host_man.init_virtualization_manager()
+        host_man.create_maas()
+        host_man.maas.wait_for_online()
+        log.debug("MAAS is online")
+        host_man.maas.initialize()
+        log.debug("Main, left initialize")
+        host_man.maas.setup()
+    except Exception as e:
+        log.error("Failled to run automaas: {}".format(e))
+
     exit(0)
 
 

@@ -132,6 +132,7 @@ class LXDManager(HostManager):
                         'addresses': [self.config.maas.dns_addresses]
                     }
                 }
+                self.config.maas.macaddr = device_mac
                 net_config_values[net.name].update(updates)
 
             net_config['ethernets'].update(net_config_values)
@@ -179,7 +180,7 @@ class LXDManager(HostManager):
         return profile
 
     @setup_step("Creating MAAS Container")
-    def create_maas_container(self):
+    def create_maas(self):
         maas_profile = self._build_maas_profile()
         # TODO: This is just a debug to see how is the output file
         yaml.safe_dump(maas_profile, open("maas_profile.yaml", "w"))
@@ -201,55 +202,6 @@ class LXDManager(HostManager):
         self._shell_run("sudo lxc config device override automaas-container "
                         "root size=30GB")
         self._shell_run("sudo lxc start automaas-container")
-
-    @setup_step("Waiting for MAAS to became online")
-    def wait_for_maas_container(self):
-        # wait for server to came online
-        while True:
-            log.debug("Waiting for MaaS server to became online")
-            maas_configs = DictConfs(
-                {'ipaddr': str(self.config.maas.ip),
-                 'pkey': self.config.host.ssh_privkey_path})
-
-            try:
-                import sys
-                sys.stderr = None
-                sys.stderr = None
-                log.debug("Connecting to: {}".format(self.config.maas.ip))
-                ssh_run_cmd(maas_configs, 'hostname', timeout=1)
-                break
-            except (paramiko.ssh_exception.NoValidConnectionsError,
-                    paramiko.ssh_exception.SSHException):
-                pass
-
-            time.sleep(1)
-
-    @setup_step("Initializing MAAS")
-    def initialize_maas_container(self):
-        maas_configs = DictConfs(
-            {'ipaddr': str(self.config.maas.ip),
-             'pkey': self.config.host.ssh_privkey_path})
-
-        log.info("Installing snaps")
-        ssh_run_cmd(maas_configs, "sudo snap install --channel=3.1/stable maas")
-        ssh_run_cmd(maas_configs, "sudo snap install maas-test-db")
-        log.info("Initializing region+rack")
-        ssh_run_cmd(maas_configs, "sudo maas init region+rack --database-uri "
-                    "\"maas-test-db:///\" "
-                    "--maas-url \"http://10.10.20.2:5240/MAAS\"  "
-                    "--num-workers 4  --enable-debug  --admin-username admin "
-                    "--admin-password admin "
-                    "--admin-ssh-import {}".format(self.config.host.lp_id))
-
-        ssh_run_cmd(maas_configs, "echo 'debug: true' | sudo tee -a /var/snap/maas/current/rackd.conf")
-        ssh_run_cmd(maas_configs, "echo 'debug: true' | sudo tee -a /var/snap/maas/current/regiond.conf")
-        ssh_run_cmd(maas_configs, "sudo snap restart maas")
-        log.info("Creating admin user")
-        ssh_run_cmd(maas_configs, "sudo maas createadmin --username admin "
-                    "--password admin --email admin@mymaas.com "
-                    "--ssh-import {}".format(self.config.host.lp_id))
-        ssh_run_cmd(maas_configs, "sudo maas apikey --username=admin | "
-                    "tee ~/maas-apikey.txt")
 
     def _create_vm(self):
         pass

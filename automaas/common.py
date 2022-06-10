@@ -20,8 +20,10 @@ import paramiko
 import psutil
 import subprocess
 import sys
+import time
 import yaml
 
+from automaas.lib import maas_connector
 
 log = logging.getLogger("automaas")
 
@@ -65,8 +67,12 @@ def ssh_run_cmd(host_info, cmd, timeout=30):
         ssh.connect(host_info.ipaddr, username='ubuntu',
                     key_filename=host_info.pkey)
         i, o, e = ssh.exec_command(cmd)
-        log.debug("Out: {}".format(o.read()))
-        log.debug("Err: {}".format(e.read()))
+        out = o.read()
+        err = e.read()
+        log.debug("Out: {}".format(out))
+        log.debug("Err: {}".format(err))
+
+    return out, err
 
 
 class DictConfs(object):
@@ -143,11 +149,11 @@ class ConfigManager(object):
 
             if net.get('type') == "nat":
                 routed += 1
-                config_yaml['maas']['ip'] = net['addr'][2]
+                config_yaml['maas']['oam_ip'] = net['addr'][2]
+                config_yaml['maas']['oam_mac'] = net['mac_id']
 
             if net.get('dhcp'):
                 dhcped += 1
-
 
             if not net.get('mtu'):
                 net['mtu'] = 1500
@@ -205,8 +211,8 @@ class HostManager(object):
     def __init__(self, config):
         self.dpkg_deps = list(filter(None, HostManager.PKG_DEPS.split(',')))
         self.snap_deps = list(filter(None, HostManager.SNAP_DEPS.split(',')))
-
         self.config = config
+        self.maas = MAASManager(self)
 
     def _get_package_deps(self):
         return self.dpkg_deps
@@ -268,4 +274,78 @@ class HostManager(object):
 
 
 class MAASManager(object):
-    pass
+
+    def __init__(self, host):
+        self.host = host
+        self.client = None
+
+    @setup_step("Waiting for MAAS to became online")
+    def wait_for_online(self):
+        # wait for server to came online
+        while True:
+            log.debug("Waiting for MaaS server to became online")
+            maas_configs = DictConfs(
+                {'ipaddr': str(self.host.config.maas.oam_ip),
+                 'pkey': self.host.config.host.ssh_privkey_path})
+
+            try:
+                import sys
+                sys.stderr = None
+                sys.stderr = None
+                log.debug("Connecting to: {}".format(
+                    self.host.config.maas.oam_ip))
+                ssh_run_cmd(maas_configs, 'hostname', timeout=1)
+                break
+            except (paramiko.ssh_exception.NoValidConnectionsError,
+                    paramiko.ssh_exception.SSHException):
+                pass
+            time.sleep(1)
+
+        while True:
+            out, err = ssh_run_cmd(maas_configs, 'sudo snap info maas',
+                                   timeout=1)
+            if len(err) == 0:
+                break
+
+            time.sleep(1)
+        log.debug("Leaving")
+
+    @setup_step("Initializing MAAS")
+    def initialize(self):
+        maas_configs = DictConfs(
+            {'ipaddr': str(self.host.config.maas.oam_ip),
+             'pkey': self.host.config.host.ssh_privkey_path})
+
+        log.info("Installing snaps")
+        ssh_run_cmd(maas_configs, "sudo snap install --channel=3.1/stable maas")
+        ssh_run_cmd(maas_configs, "sudo snap install maas-test-db")
+        log.info("Initializing region+rack")
+        ssh_run_cmd(maas_configs, "sudo maas init region+rack --database-uri "
+                                  "\"maas-test-db:///\" "
+                                  "--maas-url \"http://10.10.20.2:5240/MAAS\"  "
+                                  "--num-workers 4  --enable-debug  --admin-username admin "
+                                  "--admin-password admin "
+                                  "--admin-ssh-import {}".format(self.host.config.host.lp_id))
+
+        ssh_run_cmd(maas_configs, "echo 'debug: true' | sudo tee -a /var/snap/maas/current/rackd.conf")
+        ssh_run_cmd(maas_configs, "echo 'debug: true' | sudo tee -a /var/snap/maas/current/regiond.conf")
+        ssh_run_cmd(maas_configs, "sudo snap restart maas")
+        log.info("Creating admin user")
+        ssh_run_cmd(maas_configs, "sudo maas createadmin --username admin "
+                                  "--password admin --email admin@mymaas.com "
+                                  "--ssh-import {}".format(self.host.config.host.lp_id))
+        out, err = ssh_run_cmd(maas_configs, "sudo maas apikey --username=admin | tee ~/maas-apikey.txt")
+
+        self.host.config.maas.apikey = out.decode("utf-8").strip()
+        self.client = maas_connector.get_client(
+            "http://10.10.20.2:5240/MAAS", self.host.config.maas.apikey)
+
+    @setup_step("Configuring MAAS Server networks")
+    def setup(self):
+        log.info("Setting DHCP on OAM Network")
+        start = str(self.host.config.maas.oam_ip + 100)
+        end = str(self.host.config.maas.oam_ip + 200)
+        maas_connector.set_dhcp(self.client,
+                                self.host.config.maas.macaddr,
+                                start, end)
+
