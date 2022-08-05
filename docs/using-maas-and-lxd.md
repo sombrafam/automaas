@@ -343,7 +343,7 @@ SERVER_NAME=vm
 SERVER_DESCRIPTION="Network booted VM"
 MEM_SIZE=4GB
 CPUS=2
-DATA_DIR=/home/ubuntu/vms
+DATA_DIR=/home/erlon/vms
 DATA_DISK_SIZE=40GB
 
 mkdir -p ${DATA_DIR}
@@ -398,7 +398,7 @@ devices:
     type: disk
 EOF
 
-lxc delete vm --force
+lxc delete vm2 --force
 LXC_IMAGE=6bc6c743ff33 # ubuntu/focal/cloud
 LXC_IMAGE=ubuntu/focal/cloud/amd64
 sudo lxc init --vm images:${LXC_IMAGE} vm2 --profile vms -c security.secureboot=false
@@ -440,40 +440,40 @@ sudo iptables -I PREROUTING -t nat -p tcp -d 10.230.62.178 --dport 2222 -j DNAT 
 4. Configure LXD API
 
 ```
-lxc config set core.https_address :8443
-lxc config set core.trust_password automaas_lxd_maas
+sudo lxc config set core.https_address :8443
+sudo lxc config set core.trust_password automaas_lxd_maas
 
 lxc config trust add - <<EOF
 
 -----BEGIN CERTIFICATE-----
-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
+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
+slI=
 -----END CERTIFICATE-----
-
 EOF
 ```
 

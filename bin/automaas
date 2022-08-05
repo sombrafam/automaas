@@ -5,7 +5,7 @@ script_path=$(dirname ${script_filename})
 pushd $script_path &> /dev/null
 cd ..
 module_dir=$(pwd)
-export PYTHONPATH=${PYTHONPATH}:${module_dir}
+export PYTHONPATH=${module_dir}
 popd &> /dev/null
 
 # ${module_dir}/.venv/bin/python3 ${module_dir}/automaas/main.py $@

@@ -82,7 +82,7 @@ class DictConfs(object):
 
 
 class ConfigManager(object):
-    def __init__(self, config_path):
+    def __init__(self, config_path, skip_host_checks):
         self.networks = []
         self.servers = []
 
@@ -98,10 +98,10 @@ class ConfigManager(object):
             log.exception("{}".format(e))
             exit(1)
 
-        self._sanity_checks(config_data)
+        self._sanity_checks(config_data, skip_host_checks)
 
     @setup_step("Checking config for errors")
-    def _sanity_checks(self, config_data):
+    def _sanity_checks(self, config_data, skip_host_checks):
 
         config_yaml = yaml.safe_load(config_data)
         for section in CONFIG_SECTIONS:
@@ -189,14 +189,18 @@ class ConfigManager(object):
         log.debug("System avail mem: {}".format(system_mem_gb))
         log.debug("System avail disk: {}".format(system_disk_gb))
         if system_mem_gb < mem_required or system_disk_gb < disk_required:
-            log.error("Host does not have required disk/mem resources. ")
-            log.error("Required mem: {}G. Required disk {}G.".format(
+            lfunc = log.warning if skip_host_checks else log.error
+
+            lfunc("Host does not have required disk/mem resources. ")
+            lfunc("Required mem: {}G. Required disk {}G.".format(
                 mem_required, disk_required))
-            log.error("Avail mem: {}G. Avail disk {}G.".format(
+            lfunc("Avail mem: {}G. Avail disk {}G.".format(
                 int(system_mem_gb), int(system_disk_gb)))
-            log.error("Use a bigger host or decrease resources "
-                      "defined in '{}'".format(self.config_path))
-            exit(1)
+            lfunc("Use a bigger host or decrease resources "
+                  "defined in '{}'".format(self.config_path))
+
+            if not skip_host_checks:
+                exit(1)
 
         # TODO(erlon): Check bridge mapped interfaces should exist in the host
 
@@ -229,7 +233,8 @@ class HostManager(object):
         return out
 
     @setup_step("Checking host requirements")
-    def host_check(self):
+    def host_check(self, skip_host_checks):
+
         # check python version
         if sys.version_info.major < 3 and sys.version_info.minor < 6:
             log.error("Must use python version >= 3.6")
@@ -238,16 +243,19 @@ class HostManager(object):
         # host is focal
         release = lsb_release.get_os_release()['CODENAME']
         if release != 'focal':
-            log.error("This host version ({}) is not supported. Please use "
+            lfunc = log.warning if skip_host_checks else log.error
+            lfunc("This host version ({}) is not supported. Please use "
                       "a focal release.".format(release))
-            exit(1)
+
+            if not skip_host_checks:
+                exit(1)
 
         # host has internet access?
 
         pass
 
     @setup_step("Installing packages and required snaps")
-    def install_packages(self):
+    def install_packages(self, skip_host_checks):
         try:
             output = self._shell_run("sudo apt-get install -y {}".format(
                 " ".join(self.dpkg_deps)))
@@ -257,7 +265,9 @@ class HostManager(object):
             exit(1)
 
         for snap in self.snap_deps:
-            if '==' in snap:
+            # If we are skipping the host checks, we should install wathever
+            # lxd version is available.
+            if '==' in snap and not skip_host_checks:
                 snap_name = snap.split('==')[0]
                 snap_version = snap.split('==')[1]
             else:
@@ -289,9 +299,6 @@ class MAASManager(object):
                  'pkey': self.host.config.host.ssh_privkey_path})
 
             try:
-                import sys
-                sys.stderr = None
-                sys.stderr = None
                 log.debug("Connecting to: {}".format(
                     self.host.config.maas.oam_ip))
                 ssh_run_cmd(maas_configs, 'hostname', timeout=1)
@@ -308,7 +315,7 @@ class MAASManager(object):
                 break
 
             time.sleep(1)
-        log.debug("Leaving")
+        log.info("MAAS is online")
 
     @setup_step("Initializing MAAS")
     def initialize(self):
@@ -348,4 +355,8 @@ class MAASManager(object):
         maas_connector.set_dhcp(self.client,
                                 self.host.config.maas.macaddr,
                                 start, end)
+        log.info("Setting Upstream DNS")
+        maas_connector.set_dns(self.client,
+                               self.host.config.maas.dns_addresses)
+
 

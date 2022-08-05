@@ -1,3 +1,4 @@
 psutil
 ipaddress
 paramiko
+python-libmaas

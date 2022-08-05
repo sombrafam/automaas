@@ -88,5 +88,5 @@ servers:
       cpus: 1
       disks:
         root: 10
-        data1: 20
-        data2: 20
+        data1: 10
+        data2: 10

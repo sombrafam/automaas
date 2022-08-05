@@ -45,21 +45,24 @@ def main():
 
     parser.add_argument("--config", required=False,
                         help="The config file with all options needed")
+    parser.add_argument("--skip-host-checks", required=False,
+                        action="store_true",
+                        help="Skip any host check. Allow automaas to run in a "
+                             "host that does not have all required resources.")
     args = parser.parse_args()
 
-    try:
-        host_man = lxd.LXDManager(common.ConfigManager(args.config))
-        # host_man.host_check()
-        host_man.install_packages()
-        host_man.init_virtualization_manager()
-        host_man.create_maas()
-        host_man.maas.wait_for_online()
-        log.debug("MAAS is online")
-        host_man.maas.initialize()
-        log.debug("Main, left initialize")
-        host_man.maas.setup()
-    except Exception as e:
-        log.error("Failled to run automaas: {}".format(e))
+    host_man = lxd.LXDManager(common.ConfigManager(args.config,
+                                                   args.skip_host_checks))
+    host_man.host_check(args.skip_host_checks)
+    host_man.install_packages(args.skip_host_checks)
+    host_man.init_virtualization_manager()
+    host_man.create_maas()
+    host_man.maas.wait_for_online()
+    host_man.maas.initialize()
+    host_man.maas.setup()
+    # TODO: liwl need to wait for images to download and sync
+#    except Exception as e:
+#        log.error("Failed to run automaas: {}".format(e.__traceback__))
 
     exit(0)
 
