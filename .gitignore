@@ -90,3 +90,6 @@ celerybeat-schedule
 
 # Pycharm folder
 .idea
+
+# SQLite
+*.db

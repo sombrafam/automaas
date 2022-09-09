@@ -42,6 +42,7 @@ OPTIONAL_CONFIG_OPTS = {'host': {'networking_manager': 'lxd',
                                  'cpus': 4,
                                  'mem_gb': 8}
                         }
+DEFAULT_VM_SERIES = 'focal'
 
 
 def setup_step(phase):
@@ -79,6 +80,12 @@ class DictConfs(object):
     def __init__(self, config_dict):
         for k, v in config_dict.items():
             setattr(self, k, v)
+
+    def __getattr__(self, item):
+        try:
+            return self.__dict__[item]
+        except KeyError:
+            return None
 
 
 class ConfigManager(object):
@@ -172,7 +179,12 @@ class ConfigManager(object):
         disk_required = 0
         mem_required = 0
         for server in list(config_yaml['servers']):
-            self.servers.append(server)
+            group_name = list(server.keys())[0]
+            group_configs = list(server.values())[0]
+            group_configs['group_name'] = group_name
+            if not group_configs.get('series'):
+                group_configs['series'] = DEFAULT_VM_SERIES
+            self.servers.append(DictConfs(group_configs))
             count = list(server.values())[0]['count']
             mem_required += list(server.values())[0]['memory_gb'] * count
 
@@ -359,4 +371,21 @@ class MAASManager(object):
         maas_connector.set_dns(self.client,
                                self.host.config.maas.dns_addresses)
 
+    @setup_step("Waiting for MAAS images to sync")
+    def image_sync_check(self):
+        """
+            Loop over the server list and see what images we need. Then create,
+            the associated boot resources on maas and wait for then to download
+        :return:
+        """
+        log.debug("Fetching image list")
+        series_list = []
+        for server in self.host.config.servers:
+            series = server.series or "focal"
+            series_list.append(series)
+        # TODO: Spent a long time trying to figure out how to get the status of
+        # to the downloaded images. Couldn't move forward. For now, lets support
+        # only focal images that are default and wait for a few minutes and hope
+        # the images are available to boot.
+        time.sleep(60)
 

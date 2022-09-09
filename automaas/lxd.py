@@ -8,10 +8,16 @@ import yaml
 from automaas.common import DictConfs
 from automaas.common import HostManager
 from automaas.common import setup_step
-from automaas.common import ssh_run_cmd
+from automaas.common import DEFAULT_VM_SERIES
+from automaas.lib import db
 import automaas.yaml_helpers as yhelper
 
 log = logging.getLogger("automaas")
+
+SERIES_IMAGE_MAP = {
+    "bionic": "ubuntu/bionic/cloud",
+    "focal": "ubuntu/focal/cloud"
+}
 
 
 class LXDManager(HostManager):
@@ -51,6 +57,7 @@ class LXDManager(HostManager):
                 bridge_ip, net.addr.prefixlen)
             lxd_net_info['config']['ipv4.nat'] = \
                 "true" if net.type == "nat" else "false"
+            lxd_net_info['config']['ipv4.dhcp'] = "false"
             lxd_net_info['config']['bridge.mtu'] = net.mtu
 
             networks.append(lxd_net_info)
@@ -76,23 +83,18 @@ class LXDManager(HostManager):
         data = yaml.safe_dump(initial_config, None)
         self._shell_run("sudo lxd init --preseed", stdin=data.encode())
 
-    def _build_maas_profile(self):
-        maas_profile = dict()
-        maas_profile['name'] = "maas_server_profile"
-        maas_profile['description'] = "MAAS Server Profile"
-
-        return self._build_vm_profile(2, self.config.maas.cpus,
-                                      self.config.maas.mem_gb, maas_profile)
-
-    def _build_vm_profile(self, id, cpus, mem, profile={}):
+    def _build_vm_profile(self, id, name, cpus, mem, description=""):
 
         def _make_cmd(cmd):
             cmd = list(cmd.split())
             return cmd
 
-        profile['name'] = profile.get('name', "automaas-profile-{}".format(id))
-        profile['description'] = profile.get('description',
-                                             "MAAS Server Profile")
+        profile = dict()
+        profile['name'] = name
+        if not description:
+            profile['description'] = profile.get(
+                'description', "Server Profile")
+
         profile['config'] = dict()
         profile['devices'] = dict()
 
@@ -121,10 +123,12 @@ class LXDManager(HostManager):
             net_config_values[net.name] = {
                 'match': {'macaddress': device_mac},
                 'dhcp4': False,
-                'addresses': ['%s/%s' % (str(net.addr[id]), net.addr.prefixlen)]
+                'addresses': ['%s/%s' % (str(net.addr[id]),
+                                         net.addr.prefixlen)],
             }
 
             if net.type == "nat":
+                net_dev[net.name]['boot.priority'] = 10
                 updates = {
                     'gateway4': str(net.addr[1]),
                     'nameservers': {
@@ -179,32 +183,78 @@ class LXDManager(HostManager):
             user_data, sort_keys=False, indent=2))
         return profile
 
-    @setup_step("Creating MAAS Container")
-    def create_maas(self):
-        maas_profile = self._build_maas_profile()
-        # TODO: This is just a debug to see how is the output file
-        yaml.safe_dump(maas_profile, open("maas_profile.yaml", "w"))
-        data = yaml.safe_dump(maas_profile, None)
+    def _create_profile(self, profile):
+
+        profile_name = profile.get('name')
+        yaml.safe_dump(
+            profile, open("{}.yaml".format(profile_name), "w"))
+        data = yaml.safe_dump(profile, None)
+
         try:
-            self._shell_run("sudo lxc profile delete maas-server-profile")
+            self._shell_run(
+                "sudo lxc profile delete {}".format(profile_name))
         except subprocess.CalledProcessError as e:
             if "Profile is currently in use" in str(e.output):
-                log.error("Deleting previous automaas profile. The profile is "
+                log.error("Deleting previous profile {}. The profile is "
                           "in use by some container or VM. Please delete it "
-                          "manually and try again.")
+                          "manually and try again.".format(profile_name))
                 exit(1)
 
-        self._shell_run("sudo lxc profile create maas-server-profile")
-        self._shell_run("sudo lxc profile edit maas-server-profile",
+        self._shell_run("sudo lxc profile create {}".format(profile_name))
+        self._shell_run("sudo lxc profile edit {}".format(profile_name),
                         stdin=data.encode())
-        self._shell_run("sudo lxc init images:ubuntu/focal/cloud "
-                        "automaas-container --profile maas-server-profile")
-        self._shell_run("sudo lxc config device override automaas-container "
-                        "root size=30GB")
-        self._shell_run("sudo lxc start automaas-container")
 
-    def _create_vm(self):
-        pass
+    def _create_instance(self, profile_name, instance_name, lxc_image_name,
+                         instance_type='vm'):
+        cmd = "sudo lxc init images:{} {} --profile {}".format(
+            lxc_image_name, instance_name, profile_name)
 
+        if instance_type == "vm":
+            cmd = cmd + " --vm"
+
+        self._shell_run(cmd)
+        self._shell_run(
+            "sudo lxc config device override {} root size=30GB".format(
+                instance_name))
+        self._shell_run("sudo lxc start {}".format(instance_name))
+
+    @setup_step("Creating MAAS Container")
+    def create_maas(self):
+
+        name = "maas_server_profile"
+
+        srv = db.AutoMaasServer(name, 'maas')
+        srv.id = 2
+        srv.save()
+
+        maas_profile = self._build_vm_profile(
+            srv.id, name, self.config.maas.cpus, self.config.maas.mem_gb,
+            description="MAAS Server Profile")
+        self._create_profile(maas_profile)
+        self._create_instance(name, 'automaas-container', 'ubuntu/focal/cloud',
+                              instance_type='container')
+
+    @setup_step("Creating hosts")
     def setup_vms(self):
-        pass
+        for group in self.config.servers:
+            for i in range(0, group.count):
+                srv = db.AutoMaasServer.factory("", group.group_name)
+                name = "server-{}-{}".format(group.group_name, srv.id)
+                srv.name = name
+                srv.save()
+
+                try:
+                    series = SERIES_IMAGE_MAP[group.series]
+                except AttributeError:
+                    series = SERIES_IMAGE_MAP[DEFAULT_VM_SERIES]
+
+                profile = self._build_vm_profile(
+                    srv.id, name, group.cpus, group.memory_gb,
+                    description="automaas server {}-{}".format(
+                        group.group_name, i))
+
+                yaml.safe_dump(
+                    profile, open("{}.yaml".format(name), "w"))
+                yaml.safe_dump(profile, None)
+                self._create_profile(profile)
+                self._create_instance(name, name, series, instance_type='vm')

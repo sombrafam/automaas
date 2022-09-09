@@ -3,6 +3,7 @@ networks:
 - config:
     bridge.mtu: 1500
     ipv4.address: 10.10.10.1/24
+    ipv4.dhcp: 'false'
     ipv4.nat: 'false'
   description: 'This is an automaas generated network: admin'
   name: admin
@@ -11,6 +12,7 @@ networks:
 - config:
     bridge.mtu: 1500
     ipv4.address: 10.10.20.1/24
+    ipv4.dhcp: 'false'
     ipv4.nat: 'true'
   description: 'This is an automaas generated network: oam'
   name: oam
@@ -19,6 +21,7 @@ networks:
 - config:
     bridge.mtu: 9000
     ipv4.address: 10.10.30.1/24
+    ipv4.dhcp: 'false'
     ipv4.nat: 'false'
   description: 'This is an automaas generated network: ext'
   name: ext
@@ -27,6 +30,7 @@ networks:
 - config:
     bridge.mtu: 1500
     ipv4.address: 10.10.40.1/24
+    ipv4.dhcp: 'false'
     ipv4.nat: 'false'
   description: 'This is an automaas generated network: internal'
   name: internal
@@ -35,6 +39,7 @@ networks:
 - config:
     bridge.mtu: 1500
     ipv4.address: 10.10.50.1/24
+    ipv4.dhcp: 'false'
     ipv4.nat: 'false'
   description: 'This is an automaas generated network: public'
   name: public

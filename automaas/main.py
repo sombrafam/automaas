@@ -60,9 +60,8 @@ def main():
     host_man.maas.wait_for_online()
     host_man.maas.initialize()
     host_man.maas.setup()
-    # TODO: liwl need to wait for images to download and sync
-#    except Exception as e:
-#        log.error("Failed to run automaas: {}".format(e.__traceback__))
+    # host_man.image_sync_check()
+    host_man.setup_vms()
 
     exit(0)
 

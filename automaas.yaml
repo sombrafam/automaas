@@ -18,8 +18,9 @@
 #    lxd_storage_pool_size_gb*: [int]
 #    networking_manager: [lxd|libvirt] - How/who does the bridge creation and
 #                       networking in the host. Currently only lxd is supported.
-#    virt_manager: libvirt [lxd|libvirt]
-#    lp_id: [launchpadid]
+#    virt_manager: libvirt [lxd|libvirt] - How virtualization is done.
+#                       Currently only lxd is supported.
+#    lp_id: [launchpad id]
 host:
   networking_manager: lxd
   virt_manager: libvirt
@@ -32,7 +33,8 @@ host:
 #   hostname*: [thehostname] - the hostname the maas container will receive
 #   admin_user*: [maasadminuser]
 #   admin_passwd*: [maasadminpasswd]
-#   dns_addresses*: 10.230.56.2 - DNS user by MAAS
+#   dns_addresses*: [some.ip] - DNS user by MAAS. Don't use google DNSes if you
+#                   are inside Canonical networks
 #   dns_search: [segmaas.1ss] - DNS search. Defaults to 'localhost'
 #   cpus: [int] - Number of CPUs for the MAAS VM. Defaults to 4
 #   mem_gb: [int] - Ammount of memory for the MAAS VM. Defaults to 8
@@ -69,7 +71,8 @@ networks:
 
 servers:
   - controller:
-      count: 1
+      series: focal
+      count: 2
       memory_gb: 2
       cpus: 4
       disks:
@@ -77,7 +80,7 @@ servers:
 
   - lma:
       count: 2
-      memory_gb: 1
+      memory_gb: 2
       cpus: 2
       disks:
         root: 10
