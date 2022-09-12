@@ -106,6 +106,7 @@ class LXDManager(HostManager):
 
         net_config['version'] = 2
         net_config['ethernets'] = dict()
+        default_vlan_addr = None
         for net in self.config.networks:
             net_dev = dict()
             device_mac = "%s:%s:%s:%s:%s:%s" % (
@@ -129,6 +130,7 @@ class LXDManager(HostManager):
 
             if net.type == "nat":
                 net_dev[net.name]['boot.priority'] = 10
+                default_vlan_addr = device_mac
                 updates = {
                     'gateway4': str(net.addr[1]),
                     'nameservers': {
@@ -181,7 +183,7 @@ class LXDManager(HostManager):
         profile['config']['user.user-data'] = (
                 "#cloud-config\n" + yaml.safe_dump(
             user_data, sort_keys=False, indent=2))
-        return profile
+        return profile, default_vlan_addr
 
     def _create_profile(self, profile):
 
@@ -227,9 +229,11 @@ class LXDManager(HostManager):
         srv.id = 2
         srv.save()
 
-        maas_profile = self._build_vm_profile(
+        maas_profile, mac_addr = self._build_vm_profile(
             srv.id, name, self.config.maas.cpus, self.config.maas.mem_gb,
             description="MAAS Server Profile")
+        srv.macaddr = mac_addr
+        srv.save()
         self._create_profile(maas_profile)
         self._create_instance(name, 'automaas-container', 'ubuntu/focal/cloud',
                               instance_type='container')
@@ -248,10 +252,13 @@ class LXDManager(HostManager):
                 except AttributeError:
                     series = SERIES_IMAGE_MAP[DEFAULT_VM_SERIES]
 
-                profile = self._build_vm_profile(
+                profile, default_vlan_addr = self._build_vm_profile(
                     srv.id, name, group.cpus, group.memory_gb,
                     description="automaas server {}-{}".format(
                         group.group_name, i))
+
+                srv.macaddr = default_vlan_addr
+                srv.save()
 
                 yaml.safe_dump(
                     profile, open("{}.yaml".format(name), "w"))

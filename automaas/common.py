@@ -142,9 +142,9 @@ class ConfigManager(object):
 
         # - At least 1 network should be routed
         # - At least 1 network should have DHCP
-        # - Only 1 network should be DHCP
+        # - Only 1 network should be nat
         # - addr is valid
-        routed = dhcped = 0
+        nated = dhcped = 0
         mac_idx = 0
         for net in list(config_yaml['networks']):
             net_name = list(net.keys())[0]
@@ -155,7 +155,7 @@ class ConfigManager(object):
             net['addr'] = ipaddress.IPv4Network(net.get('addr'))
 
             if net.get('type') == "nat":
-                routed += 1
+                nated += 1
                 config_yaml['maas']['oam_ip'] = net['addr'][2]
                 config_yaml['maas']['oam_mac'] = net['mac_id']
 
@@ -172,8 +172,9 @@ class ConfigManager(object):
                       "in config file")
             exit(1)
 
-        if routed < 1:
-            log.error("There should be at least 1 routed network")
+        if nated != 1:
+            log.error("There should be at least 1 NATed network and no more "
+                      "than 1")
             exit(1)
 
         disk_required = 0
@@ -367,8 +368,8 @@ class MAASManager(object):
         maas_connector.set_dhcp(self.client,
                                 self.host.config.maas.macaddr,
                                 start, end)
-        log.info("Setting Upstream DNS")
-        maas_connector.set_dns(self.client,
+        log.info("Setting MaaS Options")
+        maas_connector.set_maas_opts(self.client,
                                self.host.config.maas.dns_addresses)
 
     @setup_step("Waiting for MAAS images to sync")
