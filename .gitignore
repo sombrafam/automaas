@@ -93,3 +93,6 @@ celerybeat-schedule
 
 # SQLite
 *.db
+
+# replay folder
+replay/
