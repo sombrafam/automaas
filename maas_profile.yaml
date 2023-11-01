@@ -1,0 +1,51 @@
+config:
+  limits.cpu: 4
+  limits.memory: 8GB
+  user.network-config: "ethernets:\n  admin:\n    addresses:\n    - 10.10.10.2/24\n\
+    \    dhcp4: false\n    match:\n      macaddress: 0a:0b:0c:0d:00:02\n  ext:\n \
+    \   addresses:\n    - 10.10.30.2/24\n    dhcp4: false\n    match:\n      macaddress:\
+    \ 0a:0b:0c:0d:02:02\n  internal:\n    addresses:\n    - 10.10.40.2/24\n    dhcp4:\
+    \ false\n    match:\n      macaddress: 0a:0b:0c:0d:03:02\n  oam:\n    addresses:\n\
+    \    - 10.10.20.2/24\n    dhcp4: false\n    gateway4: 10.10.20.1\n    match:\n\
+    \      macaddress: 0a:0b:0c:0d:01:02\n    nameservers:\n      addresses:\n   \
+    \   - 8.8.8.8\n      search:\n      - segmaas.1ss\n  public:\n    addresses:\n\
+    \    - 10.10.50.2/24\n    dhcp4: false\n    match:\n      macaddress: 0a:0b:0c:0d:04:02\n\
+    version: 2\n"
+  user.user-data: "#cloud-config\nssh_pwauth: 'yes'\nusers:\n- name: ubuntu\n  primary_group:\
+    \ ubuntu\n  gecos: Automaas\n  lock_passwd: 'false'\n  groups: lxd\n  shell: /bin/bash\n\
+    \  sudo: 'ALL = (ALL) NOPASSWD: ALL'\n  ssh_authorized_keys:\n  - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDBZNSEkkkawPaeuwjJ6zn9z32i2t61OqGFwNnhrW5lRFPnMiHO0Dj6tYnAfvcVQYrXR/MaFV90oAHAzgClvGeB7RrUsT0YFOloCJTL86mu2lITymKGUqS8m1Uu+H5rdQXE6lf9fJNVJ2bzFPi+dJLLjE+GZmLRzi7XAJljVDgRfUFAMmMQySjAsTM908Zd9UeD3PO7oSnkJpw2N9gKg/Z8VXfrC1NQrGLLDEhuC9plsmxmTOoCp/GrRALX3ldTDwiARpnBSXondqqqP0GSDsE/xfq3+3MVO/+/hGK8zuIjsBgGWNErnmYdsgOttY2IHxXa77aF124eIkDavQdehWTX\n\
+    \    erlon@thinktad-t400\ngrowpart:\n  mode: auto\n  devices:\n  - /\n  ignore_growroot_disabled:\
+    \ false\npackages:\n- python3\n- openssh-server\n- ssh-import-id\n- snapd\nruncmd:\n\
+    - - sudo\n  - usermod\n  - -p\n  - '\"\"'\n  - ubuntu\n"
+description: MAAS Server Profile
+devices:
+  admin:
+    hwaddr: 0a:0b:0c:0d:00:02
+    name: admin
+    network: admin
+    type: nic
+  ext:
+    hwaddr: 0a:0b:0c:0d:02:02
+    name: ext
+    network: ext
+    type: nic
+  internal:
+    hwaddr: 0a:0b:0c:0d:03:02
+    name: internal
+    network: internal
+    type: nic
+  oam:
+    hwaddr: 0a:0b:0c:0d:01:02
+    name: oam
+    network: oam
+    type: nic
+  public:
+    hwaddr: 0a:0b:0c:0d:04:02
+    name: public
+    network: public
+    type: nic
+  root:
+    path: /
+    pool: automaas
+    type: disk
+name: maas_server_profile

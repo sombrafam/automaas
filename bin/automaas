@@ -1,0 +1,13 @@
+#!/bin/bash -x
+
+script_filename=$(realpath $0)
+script_path=$(dirname ${script_filename})
+pushd $script_path &> /dev/null
+cd ..
+project_dir=$(pwd)
+export PYTHONPATH=${PYTHONPATH}:${project_dir}/automaas:${project_dir}
+popd &> /dev/null
+
+# ${project_dir}/.venv/bin/python3 ${project_dir}/automaas/main.py $@
+python3.10 ${project_dir}/automaas/main.py $@
+

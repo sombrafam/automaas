@@ -1,6 +1,0 @@
-<network>
-  <name>maas-admin</name>
-  <forward mode='bridge'/>
-  <bridge name='maas-admin'/>
-  <port isolated='no'/>
-</network>

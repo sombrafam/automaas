@@ -1,0 +1,95 @@
+# This is the definition file used to define the MAAS networks, MAAS server
+# configuration and interfaces used by each host created using automaas. Please
+# note that:
+#
+# - At least 1 network should be routed;
+# - At least 1 network should have DHCP;
+# - Only 1 network should be DHCP;
+# - Routed networks should have cidr;
+# - resources defined for servers should fit into resources available in the
+#   host;
+# - bridge mapped interfaces should exist in the host;
+# - '*' values are required;
+
+# [host]
+#    ssh_privkey_path*: [/path/key.pub] - This key will be used to ssh to the
+#                      hosts when needed
+#    ssh_pubkey_path*: [/path/key.pub] - This key will be injected into the hosts.
+#    lxd_storage_pool_size_gb*: [int]
+#    networking_manager: [lxd|libvirt] - How/who does the bridge creation and
+#                       networking in the host. Currently only lxd is supported.
+#    virt_manager: libvirt [lxd|libvirt] - How virtualization is done.
+#                       Currently only lxd is supported.
+#    lp_id: [launchpad id]
+host:
+  networking_manager: lxd
+  virt_manager: libvirt
+  lxd_storage_pool_size_gb: 100
+  lp_id: sombrafam
+  ssh_privkey_path: '/home/erlon/.ssh/id_rsa'
+  ssh_pubkey_path: '/home/erlon/.ssh/id_rsa.pub'
+
+# [maas]
+#   hostname*: [thehostname] - the hostname the maas container will receive
+#   admin_user*: [maasadminuser]
+#   admin_passwd*: [maasadminpasswd]
+#   dns_addresses*: [some.ip] - DNS user by MAAS. Don't use google DNSes if you
+#                   are inside Canonical networks
+#   dns_search: [segmaas.1ss] - DNS search. Defaults to 'localhost'
+#   cpus: [int] - Number of CPUs for the MAAS VM. Defaults to 4
+#   mem_gb: [int] - Ammount of memory for the MAAS VM. Defaults to 8
+maas:
+  hostname: automaas-server
+  admin_user: admin
+  admin_passwd: admin
+  dns_addresses: 8.8.8.8
+  dns_search: segmaas.1ss
+  cpus: 4
+  mem_gb: 8
+
+# TODO: Continue to document this
+networks:
+  - admin:
+      type: isolated
+      addr: 10.10.10.0/24
+      mtu: 1500
+  - oam:
+      dhcp: true
+      type: nat
+      addr: 10.10.20.0/24
+  - ext:
+      type: bridged
+      bridge_mapping: ens3
+      addr: 10.10.30.0/24
+      mtu: 9000
+  - internal:
+      type: isolated
+      addr: 10.10.40.0/24
+  - public:
+      type: isolated
+      addr: 10.10.50.0/24
+
+servers:
+  - controller:
+      series: focal
+      count: 2
+      memory_gb: 2
+      cpus: 4
+      disks:
+        root: 10
+
+  - lma:
+      count: 2
+      memory_gb: 2
+      cpus: 2
+      disks:
+        root: 10
+
+  - storage:
+      count: 2
+      memory_gb: 2
+      cpus: 2
+      disks:
+        root: 10
+        data1: 10
+        data2: 10

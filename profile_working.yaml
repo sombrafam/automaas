@@ -1,0 +1,69 @@
+name: ${SERVER_NAME}
+description: ${SERVER_DESCRIPTION}
+config:
+  limits.memory: ${MEM_SIZE}
+  limits.cpu: ${CPUS}
+  user.network-config: |-
+    version: 2
+    ethernets:
+      oam0:
+        match:
+          macaddress: 0a:d2:63:20:20:02
+        dhcp4: false
+        addresses:
+          - 10.10.20.2/24
+        gateway4: 10.10.20.1
+        nameservers:
+          search: [${NAMESERVERS_SEARCH}]
+          addresses: [${NAMESERVERS}]
+      ext0:
+        match:
+          macaddress: 0a:d2:63:10:10:02
+        dhcp4: false
+        addresses:
+          - 10.10.10.2/24
+      admin0:
+        match:
+          macaddress: 0a:d2:63:30:30:02
+        dhcp4: false
+        addresses:
+          - 10.10.30.2/24
+  user.user-data: |-
+    #cloud-config
+    ssh_pwauth: yes
+
+    users:
+      - name: ubuntu
+        lock_passwd: false
+        groups: lxd
+        shell: /bin/bash
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        ssh_authorized_keys:
+          - ${ssh_key}
+        ssh_import_id:
+          - lp:${LP_ID}
+
+    growpart:
+      mode: auto
+      devices: ['/']
+      ignore_growroot_disabled: false
+devices:
+  admin0:
+    name: admin0
+    network: admin
+    type: nic
+    hwaddr: 0a:d2:63:10:10:02
+  oam0:
+    name: oam0
+    network: oam
+    type: nic
+    hwaddr: 0a:d2:63:20:20:02
+  ext0:
+    name: ext0
+    network: ext
+    type: nic
+    hwaddr: 0a:d2:63:30:30:02
+  root:
+    path: /
+    pool: default
+    type: disk

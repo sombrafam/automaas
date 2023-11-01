@@ -1,6 +1,0 @@
-all:
-  hosts:
-    x1maas:
-      ansible_user: ubuntu
-      ansible_port: 22
-      ansible_host: 192.168.122.160

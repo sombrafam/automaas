@@ -1,5 +1,0 @@
-- hosts: all
-  roles:
-  - prereqs
-  - libvirt-nets
-  - images

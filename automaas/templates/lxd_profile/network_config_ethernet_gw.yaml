@@ -1,0 +1,21 @@
+ethernets:
+#  oam0:
+#    match:
+#      macaddress: 0a:d2:63:20:20:02
+#    dhcp4: false
+#    addresses:
+#      - 10.10.20.2/24
+#    gateway4: 10.10.20.1
+#    nameservers:
+#      search: [${NAMESERVERS_SEARCH}]
+#      addresses: [${NAMESERVERS}]
+  __NAME__:
+    match:
+      macaddress: __MAC__
+    dhcp4: __DHCP__
+    addresses:
+      - __CIDR__
+    gateway4: __GW__
+    nameservers:
+      search: [_NS_SEARCH_]
+      addresses: [__NS__]

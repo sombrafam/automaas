@@ -1,0 +1,6 @@
+devices:
+  __NAME__:
+    name: __NAME__
+    network: __NETWORK__
+    type: nic
+    hwaddr: __MAC__
