@@ -92,12 +92,12 @@ properly connected to the needed networks.
 In case you want to use a similar to production network scheme, these are the
 networks created ando configured by default:
 
-| Fabric  |   Space   |    Subnet        |
-|---------|-----------|------------------|
-|fabric-0 |           | 192.168.123.0/24 |
-|fabric-2 | admin     | 10.10.20.0/24    |
-|fabric-3 | ext       | 10.10.50.0/24    |
-|fabric-4 | internal  | 10.10.40.0/24    |
-|fabric-5 | k8s       | 10.10.60.0/24    |
-|fabric-6 | oam       | 10.10.10.0/24    |
-|fabric-7 | public    | 10.10.30.0/24    |
+| Fabric  **|   Space   |**    Subnet        |
+|---------**|-----------|**------------------|
+|fabric-0 **|           |** 192.168.123.0/24 |
+|fabric-2 **| admin     |** 10.10.20.0/24    |
+|fabric-3 **| ext       |** 10.10.50.0/24    |
+|fabric-4 **| internal  |** 10.10.40.0/24    |
+|fabric-5 **| k8s       |** 10.10.60.0/24    |
+|fabric-6 **| oam       |** 10.10.10.0/24    |
+|fabric-7 **| public    |** 10.10.30.0/24    |

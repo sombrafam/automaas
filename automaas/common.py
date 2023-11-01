@@ -367,7 +367,7 @@ class MAASManager(object):
         end = str(self.host.config.maas.oam_ip + 200)
         maas_connector.set_dhcp(self.client,
                                 self.host.config.maas.macaddr,
-                                start, end)
+                                start, end, dns="10.10.20.2")
         log.info("Setting MaaS Options")
         maas_connector.set_maas_opts(self.client,
                                self.host.config.maas.dns_addresses)
@@ -379,14 +379,21 @@ class MAASManager(object):
             the associated boot resources on maas and wait for then to download
         :return:
         """
-        log.debug("Fetching image list")
-        series_list = []
-        for server in self.host.config.servers:
-            series = server.series or "focal"
-            series_list.append(series)
-        # TODO: Spent a long time trying to figure out how to get the status of
-        # to the downloaded images. Couldn't move forward. For now, lets support
-        # only focal images that are default and wait for a few minutes and hope
-        # the images are available to boot.
-        time.sleep(60)
+        filters = {"macs": [self.host.config.maas.macaddr]}
 
+        finished = False
+        timeout = 300
+        while not finished and timeout > 0:
+            events = maas_connector.get_events(self.client, filters)
+            for e in events:
+                if "Finished importing" in e.description:
+                    break
+            time.sleep(30)
+            timeout = timeout - 30
+            log.debug("Waiting for default image download")
+
+
+
+    @setup_step("Waiting for machines to be enlisted")
+    def wait_enlistment(self):
+        pass

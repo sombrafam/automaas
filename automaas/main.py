@@ -36,6 +36,19 @@ log.addHandler(f_handler)
 log.setLevel(logging.DEBUG)
 
 
+def create_single_vm(manager, group):
+    """Create a single VM
+
+    """
+
+    log.info("Creating {} VM".format(group))
+    vm = self.maas.create_vm(vm_name, vm_config)
+    vm.start()
+    vm.wait_for_online()
+    vm.wait_for_ssh()
+    vm.wait_for_cloud_init()
+    return vm
+
 def main():
 
     parser = argparse.ArgumentParser(
@@ -61,7 +74,7 @@ def main():
     host_man.maas.initialize()
     host_man.maas.setup()
     # host_man.image_sync_check()
-    host_man.setup_vms()
+    host_man.create_vms()
 
     exit(0)
 

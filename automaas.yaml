@@ -86,9 +86,9 @@ servers:
         root: 10
 
   - storage:
-      count: 1
+      count: 2
       memory_gb: 2
-      cpus: 1
+      cpus: 2
       disks:
         root: 10
         data1: 10

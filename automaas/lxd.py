@@ -239,7 +239,7 @@ class LXDManager(HostManager):
                               instance_type='container')
 
     @setup_step("Creating hosts")
-    def setup_vms(self):
+    def create_vms(self):
         for group in self.config.servers:
             for i in range(0, group.count):
                 srv = db.AutoMaasServer.factory("", group.group_name)

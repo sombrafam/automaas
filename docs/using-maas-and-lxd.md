@@ -477,6 +477,15 @@ Ss+n
 EOF
 ```
 
+
+m1 = c.machines.list()[3]
+m1.set_power("lxd", power_parameters={'project': 'default', 'password': 'automaas_lxd_maas','power_address': 'https://10.10.20.1:8443', 'instance_name': 'server-lma-6'})
+m1.hostname = "server-lma-6"
+m1.save()
+m1.commission()
+
+
+
 ## Appendix
 
 ```sh
