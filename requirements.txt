@@ -3,3 +3,6 @@ ipaddress
 paramiko
 python-libmaas
 sqlalchemy
+maas
+pymacaroons
+libxml2
